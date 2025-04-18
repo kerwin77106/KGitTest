@@ -1,54 +1,162 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>點擊小方塊遊戲</title>
+    <title>閃躲遊戲</title>
     <style>
         body {
-            text-align: center;
-            margin-top: 50px;
-            font-family: Arial, sans-serif;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
         }
-        #box {
+
+        .container {
+            position: relative;
+            width: 400px;
+            height: 500px;
+            border: 1px solid #ccc;
+            background-color: #eee;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background-color: blue;
+            border-radius: 5px;
+        }
+
+        #obstacle {
+            position: absolute;
+            top: -50px;
+            left: calc(50% - 25px); /* 初始位置在中間 */
             width: 50px;
             height: 50px;
-            background-color: tomato;
+            background-color: red;
+        }
+
+        #score {
             position: absolute;
-            top: 100px;
-            left: 100px;
+            top: 10px;
+            left: 10px;
+            font-size: 16px;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        #game-over h1 {
+            margin-top: 0;
+        }
+
+        #game-over button {
+            padding: 10px 20px;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
-
-
-    <h1>點擊紅色小方塊！</h1>
-    <p>試試看你能點到幾次～</p>
-    <div id="box"></div>
-
-
-    <p>得分：<span id="score">0</span></p>
-
+    <div class="container">
+        <div id="player"></div>
+        <div id="obstacle"></div>
+        <div id="score">分數: 0</div>
+        <div id="game-over" style="display: none;">
+            <h1>遊戲結束</h1>
+            <p id="final-score"></p>
+            <button onclick="startGame()">重新開始</button>
+        </div>
+    </div>
 
     <script>
-        const box = document.getElementById('box');
+        const player = document.getElementById('player');
+        const obstacle = document.getElementById('obstacle');
         const scoreDisplay = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const container = document.querySelector('.container');
+
+        let playerX = 185; // 初始玩家 X 軸位置
+        let obstacleY = -50;
+        let obstacleSpeed = 2;
         let score = 0;
+        let gameInterval;
 
+        function movePlayer(event) {
+            const step = 20;
+            if (event.key === 'ArrowLeft' && playerX > 0) {
+                playerX -= step;
+            } else if (event.key === 'ArrowRight' && playerX < container.offsetWidth - player.offsetWidth) {
+                playerX += step;
+            }
+            player.style.left = playerX + 'px';
+        }
 
-        box.addEventListener('click', () => {
-            score++;
-            scoreDisplay.textContent = score;
-            // 每次被點到就移動到隨機位置
-            box.style.top = Math.random() * (window.innerHeight - 60) + 'px';
-            box.style.left = Math.random() * (window.innerWidth - 60) + 'px';
-        });
+        function moveObstacle() {
+            obstacleY += obstacleSpeed;
+            obstacle.style.top = obstacleY + 'px';
+
+            // 障礙物超出畫面後重置
+            if (obstacleY > container.offsetHeight) {
+                obstacleY = -50;
+                obstacle.style.left = Math.random() * (container.offsetWidth - obstacle.offsetWidth) + 'px';
+                score++;
+                scoreDisplay.textContent = `分數: ${score}`;
+                obstacleSpeed += 0.1; // 稍微增加難度
+            }
+
+            checkCollision();
+        }
+
+        function checkCollision() {
+            const playerRect = player.getBoundingClientRect();
+            const obstacleRect = obstacle.getBoundingClientRect();
+
+            if (playerRect.left < obstacleRect.right &&
+                playerRect.right > obstacleRect.left &&
+                playerRect.top < obstacleRect.bottom &&
+                playerRect.bottom > obstacleRect.top) {
+                gameOver();
+            }
+        }
+
+        function startGame() {
+            playerX = 185;
+            player.style.left = playerX + 'px';
+            obstacleY = -50;
+            obstacle.style.top = obstacleY + 'px';
+            obstacle.style.left = Math.random() * (container.offsetWidth - obstacle.offsetWidth) + 'px';
+            obstacleSpeed = 2;
+            score = 0;
+            scoreDisplay.textContent = '分數: 0';
+            gameOverScreen.style.display = 'none';
+            gameInterval = setInterval(moveObstacle, 30); // 每 30 毫秒移動一次障礙物
+            document.addEventListener('keydown', movePlayer);
+        }
+
+        function gameOver() {
+            clearInterval(gameInterval);
+            document.removeEventListener('keydown', movePlayer);
+            finalScoreDisplay.textContent = `你的分數: ${score}`;
+            gameOverScreen.style.display = 'block';
+        }
+
+        // 遊戲開始
+        startGame();
     </script>
-
-
 </body>
 </html>
-
-
-
