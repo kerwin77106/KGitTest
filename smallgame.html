@@ -1,16 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>閃躲遊戲</title>
+    <title>四面八方閃躲遊戲</title>
     <style>
         body {
             font-family: sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
+        }
+
+        #game-info {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
 
         .container {
@@ -24,22 +33,21 @@
 
         #player {
             position: absolute;
-            bottom: 20px;
             left: 50%;
-            transform: translateX(-50%);
+            top: 50%;
+            transform: translate(-50%, -50%);
             width: 30px;
             height: 30px;
             background-color: blue;
             border-radius: 5px;
         }
 
-        #obstacle {
+        .obstacle {
             position: absolute;
-            top: -50px;
-            left: calc(50% - 25px); /* 初始位置在中間 */
-            width: 50px;
-            height: 50px;
+            width: 20px;
+            height: 20px;
             background-color: red;
+            border-radius: 50%; /* 圓形障礙物 */
         }
 
         #score {
@@ -71,9 +79,13 @@
     </style>
 </head>
 <body>
+    <div id="game-info">
+        <h2>四面八方閃躲遊戲</h2>
+        <p>使用<strong>上下左右方向鍵</strong>移動藍色方塊，躲避從四面八方出現的紅色圓形障礙物。</p>
+        <p>隨著時間推移，遊戲速度會逐漸加快，增加難度！</p>
+    </div>
     <div class="container">
         <div id="player"></div>
-        <div id="obstacle"></div>
         <div id="score">分數: 0</div>
         <div id="game-over" style="display: none;">
             <h1>遊戲結束</h1>
@@ -84,72 +96,141 @@
 
     <script>
         const player = document.getElementById('player');
-        const obstacle = document.getElementById('obstacle');
+        const container = document.querySelector('.container');
         const scoreDisplay = document.getElementById('score');
         const gameOverScreen = document.getElementById('game-over');
         const finalScoreDisplay = document.getElementById('final-score');
-        const container = document.querySelector('.container');
 
-        let playerX = 185; // 初始玩家 X 軸位置
-        let obstacleY = -50;
-        let obstacleSpeed = 2;
+        let playerX = container.offsetWidth / 2 - 15; // 初始玩家 X 軸位置
+        let playerY = container.offsetHeight / 2 - 15; // 初始玩家 Y 軸位置
+        let obstacles = [];
         let score = 0;
         let gameInterval;
+        let gameSpeed = 1; // 初始遊戲速度
+        let speedIncreaseInterval;
+
+        function updatePlayerPosition() {
+            player.style.left = playerX + 'px';
+            player.style.top = playerY + 'px';
+        }
 
         function movePlayer(event) {
-            const step = 20;
+            const step = 10;
             if (event.key === 'ArrowLeft' && playerX > 0) {
                 playerX -= step;
             } else if (event.key === 'ArrowRight' && playerX < container.offsetWidth - player.offsetWidth) {
                 playerX += step;
+            } else if (event.key === 'ArrowUp' && playerY > 0) {
+                playerY -= step;
+            } else if (event.key === 'ArrowDown' && playerY < container.offsetHeight - player.offsetHeight) {
+                playerY += step;
             }
-            player.style.left = playerX + 'px';
+            updatePlayerPosition();
         }
 
-        function moveObstacle() {
-            obstacleY += obstacleSpeed;
-            obstacle.style.top = obstacleY + 'px';
+        function createObstacle() {
+            const obstacle = document.createElement('div');
+            obstacle.classList.add('obstacle');
+            const size = 20;
+            obstacle.style.width = size + 'px';
+            obstacle.style.height = size + 'px';
 
-            // 障礙物超出畫面後重置
-            if (obstacleY > container.offsetHeight) {
-                obstacleY = -50;
-                obstacle.style.left = Math.random() * (container.offsetWidth - obstacle.offsetWidth) + 'px';
-                score++;
-                scoreDisplay.textContent = `分數: ${score}`;
-                obstacleSpeed += 0.1; // 稍微增加難度
+            // 隨機從四個邊緣出現
+            const side = Math.floor(Math.random() * 4);
+            let x, y, vx, vy;
+            const speed = 2 * gameSpeed; // 障礙物速度與遊戲速度相關
+
+            switch (side) {
+                case 0: // Top
+                    x = Math.random() * container.offsetWidth;
+                    y = -size;
+                    vx = (Math.random() - 0.5) * speed;
+                    vy = Math.max(speed - Math.abs(vx), 0.5); // 確保有垂直速度
+                    break;
+                case 1: // Bottom
+                    x = Math.random() * container.offsetWidth;
+                    y = container.offsetHeight;
+                    vx = (Math.random() - 0.5) * speed;
+                    vy = -Math.max(speed - Math.abs(vx), 0.5); // 確保有垂直速度
+                    break;
+                case 2: // Left
+                    x = -size;
+                    y = Math.random() * container.offsetHeight;
+                    vy = (Math.random() - 0.5) * speed;
+                    vx = Math.max(speed - Math.abs(vy), 0.5); // 確保有水平速度
+                    break;
+                case 3: // Right
+                    x = container.offsetWidth;
+                    y = Math.random() * container.offsetHeight;
+                    vy = (Math.random() - 0.5) * speed;
+                    vx = -Math.max(speed - Math.abs(vy), 0.5); // 確保有水平速度
+                    break;
             }
+
+            obstacle.style.left = x + 'px';
+            obstacle.style.top = y + 'px';
+            container.appendChild(obstacle);
+            obstacles.push({ element: obstacle, x, y, vx, vy });
+        }
+
+        function moveObstacles() {
+            obstacles.forEach(obstacleObj => {
+                obstacleObj.x += obstacleObj.vx;
+                obstacleObj.y += obstacleObj.vy;
+                obstacleObj.element.style.left = obstacleObj.x + 'px';
+                obstacleObj.element.style.top = obstacleObj.y + 'px';
+
+                // 移除超出畫面的障礙物
+                if (obstacleObj.x < -20 || obstacleObj.x > container.offsetWidth || obstacleObj.y < -20 || obstacleObj.y > container.offsetHeight) {
+                    obstacleObj.element.remove();
+                    obstacles.splice(obstacles.indexOf(obstacleObj), 1);
+                    score++;
+                    scoreDisplay.textContent = `分數: ${score}`;
+                }
+            });
 
             checkCollision();
         }
 
         function checkCollision() {
             const playerRect = player.getBoundingClientRect();
-            const obstacleRect = obstacle.getBoundingClientRect();
-
-            if (playerRect.left < obstacleRect.right &&
-                playerRect.right > obstacleRect.left &&
-                playerRect.top < obstacleRect.bottom &&
-                playerRect.bottom > obstacleRect.top) {
-                gameOver();
+            for (const obstacleObj of obstacles) {
+                const obstacleRect = obstacleObj.element.getBoundingClientRect();
+                if (playerRect.left < obstacleRect.right &&
+                    playerRect.right > obstacleRect.left &&
+                    playerRect.top < obstacleRect.bottom &&
+                    playerRect.bottom > obstacleRect.top) {
+                    gameOver();
+                    break;
+                }
             }
         }
 
+        function increaseSpeed() {
+            gameSpeed += 0.05; // 緩慢增加遊戲速度
+        }
+
         function startGame() {
-            playerX = 185;
-            player.style.left = playerX + 'px';
-            obstacleY = -50;
-            obstacle.style.top = obstacleY + 'px';
-            obstacle.style.left = Math.random() * (container.offsetWidth - obstacle.offsetWidth) + 'px';
-            obstacleSpeed = 2;
+            playerX = container.offsetWidth / 2 - 15;
+            playerY = container.offsetHeight / 2 - 15;
+            updatePlayerPosition();
+            obstacles.forEach(obj => obj.element.remove());
+            obstacles = [];
             score = 0;
+            gameSpeed = 1;
             scoreDisplay.textContent = '分數: 0';
             gameOverScreen.style.display = 'none';
-            gameInterval = setInterval(moveObstacle, 30); // 每 30 毫秒移動一次障礙物
+            gameInterval = setInterval(() => {
+                createObstacle();
+                moveObstacles();
+            }, 1000 / (30 * gameSpeed)); // 根據遊戲速度調整幀率
+            speedIncreaseInterval = setInterval(increaseSpeed, 5000); // 每 5 秒增加一次速度
             document.addEventListener('keydown', movePlayer);
         }
 
         function gameOver() {
             clearInterval(gameInterval);
+            clearInterval(speedIncreaseInterval);
             document.removeEventListener('keydown', movePlayer);
             finalScoreDisplay.textContent = `你的分數: ${score}`;
             gameOverScreen.style.display = 'block';
