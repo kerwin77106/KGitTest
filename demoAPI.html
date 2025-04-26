@@ -63,6 +63,15 @@
             pTemp.textContent = `最高溫度：${maxTemperature} °C`; // 加上單位
             item.appendChild(pTemp);
 
+            
+            
+            const description = loc.weatherElement.find(e => e.elementName === 'Wx');
+            const Tdescription = description && description.time && description.time[0] ? description.time[0].parameter.parameterName : '—';
+
+            const dTemp = document.createElement('p');
+            dTemp.textContent = `天氣狀況：${Tdescription} `;
+            item.appendChild(dTemp);
+
 
             weatherList.appendChild(item);
           });
