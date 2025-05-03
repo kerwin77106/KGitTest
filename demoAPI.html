@@ -6,10 +6,12 @@
   </head>
   <body>
     <div class="container">
+      <pre id="mymessage"></pre>
       <h1>未來 36 小時各區天氣預報</h1>
       <div id="weatherList">載入中…</div>
       <div class="btn-container">
         <a class="btn" href="javascript:history.back()">上一頁</a>
+        
         <a class="btn" href="index.html">回首頁</a>
       </div>
     </div>
@@ -73,7 +75,7 @@
             item.appendChild(dTemp);
 
 
-            weatherList.appendChild(item);
+            weatherList.appendChild(item);  
           });
         } catch (err) {
           weatherList.textContent = '載入失敗：' + err.message;
@@ -82,6 +84,26 @@
 
 
       loadWeather();
+      const apiUrl2 = 'http://localhost:8000/api/hello';
+      const mymessage =document.getElementById('mymessage');
+      async function loadMessage() {
+        try {
+          const resp = await fetch(apiUrl2); //GET
+          if (!resp.ok) throw new Error('HTTP 錯誤:'+resp.status);
+          const data =  await resp.text();
+          if (!data) {
+            weatherList.textContent = '未取得任何資料';
+            return;
+          }
+          mymessage.textContent = data;
+        }catch(err) {
+          mymessage.textContent = '載入失敗：' + err.message;
+        }
+      }
+      loadMessage();
+    
     </script>
+    
+    </div>
   </body>
 </html>
