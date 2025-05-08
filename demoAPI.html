@@ -3,11 +3,55 @@
   <head>
     <meta charset="UTF-8" />
     <title>天氣預報 (36 小時)</title>
+
+    <style>
+      .hidden {
+      display: none;
+    }
+      
+      .tab-btn {
+      margin-right: 10px;
+      padding: 6px 12px;
+      cursor: pointer;
+      background-color: #0078D4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+      }
+      th {
+        background-color: #333;
+        color: white;
+      }
+    </style>
+
   </head>
   <body>
     <div class="container">
       <pre id="mymessage"></pre>
-      <div id="tableContainer"></div>
+
+      <h1>資料表切換展示</h1>
+  <div>
+    <button class="tab-btn" onclick="showTab('customers')">顧客資料</button>
+    <button class="tab-btn" onclick="showTab('orders')">訂單資料</button>
+  </div>
+  <div>
+    <div id="tableContainer" class="hidden">載入中…</div>
+    <div id="tableContainer2" class="hidden">載入中…</div>
+  </div>
+
+
+
       <h1>未來 36 小時各區天氣預報</h1>
       <div id="weatherList">載入中…</div>
       <div class="btn-container">
@@ -92,7 +136,9 @@
       //async function loadMessage() {
 
       const container = document.getElementById('tableContainer');
-      async function loadTable(url) {
+      const container2 = document.getElementById('tableContainer2');
+      const container3 = document.getElementById('tableContainer3');
+      async function loadTable(url, todiv) {
       try {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`HTTP 錯誤: ${resp.status}`);
@@ -118,14 +164,25 @@
           table += '</tr>';
         });
         table += '</tbody></table>';
-        container.innerHTML = table;
+        todiv.innerHTML = table;
       } catch (err) {
-        container.textContent = '載入失敗：' + err.message;
+        todiv.textContent = '載入失敗：' + err.message;
       }
     }
 
 
-    loadTable(apicustomers);
+    loadTable(apiUrl2, tableContainer);
+    loadTable(apicustomers, tableContainer2);
+    function showTab(name) {
+      if (name == "customers") {
+        container.style.display = "block";
+        container2.style.display = "none";
+      } else {
+        container.style.display = "none";
+        container2.style.display = "block";
+      }
+    }
+
     </script>
     
     </div>
