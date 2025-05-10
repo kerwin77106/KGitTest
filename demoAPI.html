@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
-    <title>天氣預報 (36 小時)</title>
+    <title></title>
 
     <style>
       .hidden {
@@ -37,114 +37,39 @@
 
   </head>
   <body>
-    <div class="container">
-      <pre id="mymessage"></pre>
-
       <h1>資料表切換展示</h1>
   <div>
-    <button class="tab-btn" onclick="showTab('customers')">顧客資料</button>
-    <button class="tab-btn" onclick="showTab('orders')">訂單資料</button>
+    <button class="tab-btn" onclick="loadTable(apicustomers, tableContainer)">顧客資料</button>
+    <button class="tab-btn" onclick="loadTable(apiorders, tableContainer)">訂單資料</button>
+    <button class="tab-btn" onclick="loadTable(apiproducts, tableContainer)">產品資料</button>
+    <button class="tab-btn" onclick="loadTable(apiorderdetails, tableContainer)">訂單詳細資料</button>
+    <button class="tab-btn" onclick="loadTable(apiorder_items, tableContainer)">訂單商品內容</button>
+    <button class="tab-btn" onclick="loadTable(apidrivers, tableContainer)">司機</button>
   </div>
   <div>
-    <div id="tableContainer" class="hidden">載入中…</div>
-    <div id="tableContainer2" class="hidden">載入中…</div>
-  </div>
-
-
-
-      <h1>未來 36 小時各區天氣預報</h1>
-      <div id="weatherList">載入中…</div>
-      <div class="btn-container">
-        <a class="btn" href="javascript:history.back()">上一頁</a>
-        
-        <a class="btn" href="index.html">回首頁</a>
-      </div>
-    </div>
-
+    <div id="tableContainer">載入中…</div>
 
     <script>
-      const apiUrl = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWB-FE4AD205-4642-40AD-B7FD-336A53D1ED2A';
-      const weatherList = document.getElementById('weatherList');
 
-
-      async function loadWeather() {   //防呆
-        try {   
-          const resp = await fetch(apiUrl);  //GET 拿資料
-          if (!resp.ok) throw new Error(`HTTP 錯誤：${resp.status}`);  //確定資料回傳成功
-          const data = await resp.json();  //把拿回來的資料翻譯成JSON把拿回來的資料翻譯成JSON
-          const locations = data.records.location;  //data 整包 . KEY . ARRAY //要改!!.records.location 直接指向關鍵資料
-          if (!locations || !locations.length) {   //防呆  如果ARRAY找不到或是沒有資料
-            weatherList.textContent = '未取得任何天氣資料';   
-            return;
-          }
-
-
-          // 清空載入中提示
-          weatherList.innerHTML = '';
-
-
-          // 顯示每個地區的天氣簡述 (第一時段)
-          locations.forEach(loc => {    //經典forEach 寫法  //loc變數名稱
-            const item = document.createElement('div');
-            //item.className = 'weather-item';
-
-
-            const area = document.createElement('h3');
-            area.textContent = loc.locationName;
-            item.appendChild(area);
-
-
-            // 取第一個 time 節點的天氣現象與舒適度
-            const t = loc.weatherElement.find(e => e.elementName === 'PoP');  //尋找下一個對象 
-            const desc = t && t.time && t.time[0] ? t.time[0].parameter.parameterName : '—';
-
-
-            const p = document.createElement('p');
-            p.textContent = `降雨機率：${desc}`;
-            item.appendChild(p);
-
-            const tempElement = loc.weatherElement.find(e => e.elementName === 'MaxT');
-            const maxTemperature = tempElement && tempElement.time && tempElement.time[0] ? tempElement.time[0].parameter.parameterName : '—';
-
-            const pTemp = document.createElement('p');
-            pTemp.textContent = `最高溫度：${maxTemperature} °C`; // 加上單位
-            item.appendChild(pTemp);
-
-            
-            
-            const description = loc.weatherElement.find(e => e.elementName === 'Wx');
-            const Tdescription = description && description.time && description.time[0] ? description.time[0].parameter.parameterName : '—';
-
-            const dTemp = document.createElement('p');
-            dTemp.textContent = `天氣狀況：${Tdescription} `;
-            item.appendChild(dTemp);
-
-
-            weatherList.appendChild(item);  
-          });
-        } catch (err) {
-          weatherList.textContent = '載入失敗：' + err.message;
-        }
-      }
-
-      
-      loadWeather();
-      const apiUrl2 = 'http://localhost:8000/api/hello';
-      const apicustomers = 'http://localhost:8000/api/customers';
-      const apiorderdetails = 'http://localhost:8000/api/orderdetails';
+      const apiorders = 'http://localhost:8000/api/1/orders';
+      const apicustomers = 'http://localhost:8000/api/1/customers';
+      const apiproducts = 'http://localhost:8000/api/1/products';
+      const apiorderdetails = 'http://localhost:8000/api/1/orderdetails';
+      const apiorder_items = 'http://localhost:8000/api/1/order_items';
+      const apidrivers = 'http://localhost:8000/api/1/drivers';
       //const mymessage =document.getElementById('mymessage');
       //async function loadMessage() {
 
-      const container = document.getElementById('tableContainer');
-      const container2 = document.getElementById('tableContainer2');
-      const container3 = document.getElementById('tableContainer3');
-      async function loadTable(url, todiv) {
+      const container1 = document.getElementById('tableContainer');
+
+    async function loadTable(url, todiv) {
+
       try {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`HTTP 錯誤: ${resp.status}`);
         const data = await resp.json();
         if (!Array.isArray(data) || data.length === 0) {
-          container.textContent = '沒有資料';
+          container1.textContent = '沒有資料';
           return;
         }
         // 產生表格
@@ -167,19 +92,6 @@
         todiv.innerHTML = table;
       } catch (err) {
         todiv.textContent = '載入失敗：' + err.message;
-      }
-    }
-
-
-    loadTable(apiUrl2, tableContainer);
-    loadTable(apicustomers, tableContainer2);
-    function showTab(name) {
-      if (name == "customers") {
-        container.style.display = "block";
-        container2.style.display = "none";
-      } else {
-        container.style.display = "none";
-        container2.style.display = "block";
       }
     }
 
