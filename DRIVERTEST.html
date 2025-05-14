@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>派車系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #003C5A; /* 深藍色背景 */
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 3em; /* U.First 字體大小 */
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .system-name {
+            font-size: 1.2em; /* 派車系統 字體大小 */
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 三欄佈局 */
+            gap: 15px; /* 按鈕間距 */
+            padding: 20px;
+            width: 90%;
+            max-width: 600px; /* 限制最大寬度 */
+            margin-top: 20px;
+        }
+
+        .button {
+            background-color: #005A87; /* 按鈕背景色 */
+            border: 1px solid #0077B3; /* 按鈕邊框 */
+            border-radius: 10px; /* 按鈕圓角 */
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #0077B3; /* 滑鼠懸停時的按鈕背景色 */
+        }
+
+        .button img {
+            width: 40px; /* 圖標大小 */
+            height: 40px;
+            margin-bottom: 10px;
+        }
+
+        .button span {
+            font-size: 0.9em; /* 按鈕文字大小 */
+        }
+
+        .announcement-dot {
+            background-color: red;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 5px;
+            vertical-align: super; /* 讓紅點稍微往上 */
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: #0077B3; /* 分隔線顏色 */
+            width: 90%;
+            max-width: 600px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        /* 簡易的圖標佔位符 - 您可以用實際的圖片或SVG圖標替換它們 */
+        /* 這裡使用 Font Awesome 作為示例，您需要引入 Font Awesome 的 CSS */
+        /* 或者，您可以直接使用 <img> 標籤並提供圖片路徑 */
+        .icon-car-manage::before { content: "🚗"; font-size: 2em; margin-bottom: 5px; } /* 趟次管理 */
+        .icon-car-dispatch::before { content: "ℹ️"; font-size: 2em; margin-bottom: 5px; } /* 趟次異動 */
+        .icon-car-cancel::before { content: "❌"; font-size: 2em; margin-bottom: 5px; } /* 趟次取消 */
+        .icon-announcement::before { content: "📢"; font-size: 2em; margin-bottom: 5px; } /* 訊息公告 */
+        .icon-history::before { content: "📜"; font-size: 2em; margin-bottom: 5px; } /* 歷史紀錄 */
+        .icon-driver-area::before { content: "👤"; font-size: 2em; margin-bottom: 5px; } /* 司機專區 */
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">Kerwin</div>
+        <div class="system-name">派車系統</div>
+    </div>
+
+    <div class="main-content">
+        <div class="button">
+            <div class="icon-car-manage"></div>
+            <span>趟次管理</span>
+        </div>
+        <div class="button">
+            <div class="icon-car-dispatch"></div>
+            <span>趟次異動</span>
+        </div>
+        <div class="button">
+            <div class="icon-car-cancel"></div>
+            <span>趟次取消</span>
+        </div>
+        <div class="button">
+            <div class="icon-announcement"></div>
+            <span>訊息公告 <span class="announcement-dot"></span></span>
+        </div>
+        <div class="button">
+            <div class="icon-history"></div>
+            <span>歷史紀錄</span>
+        </div>
+        <div class="button">
+            <div class="icon-driver-area"></div>
+            <span>司機專區</span>
+        </div>
+    </div>
+
+    <hr>
+
+    </body>
+</html>
