@@ -33,52 +33,69 @@
     <button onclick="sendMessage()">送出</button>
 
 
-   <script>
-        const A1 = document.getElementById('messages');
-        const A2 = document.getElementById('input');
-        const A3 = document.getElementById('username');
+  <script>
+    const messages = document.getElementById('messages');
+    const input = document.getElementById('input');
+    const username = document.getElementById('username');
 
 
-        // 發送訊息
-        function sendMessage() {
-            const name = A3.value.trim();
-            const text = A2.value.trim();
-            if (!name || !text) return alert('請輸入名字和訊息');
+    const apiBase = 'http://localhost:8000'; // ✅ <--- 請改成你的 ngrok 網址
 
 
-            fetch('http://localhost:8000/chat/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, message: text })
-            }).then(() => {
-                A2.value = '';
-                loadMessages(); // 即時刷新
-            });
-        }
+    function sendMessage() {
+      const name = username.value.trim();
+      const text = input.value.trim();
+      if (!name || !text) {
+        alert("請輸入名字和訊息！");
+        return;
+      }
 
 
-        // 撈取訊息
-        async function loadMessages() {
-            try {
-                const resp = await fetch('http://localhost:8000/chat/messages');
-                const data = await resp.json();
-                A1.innerHTML = '';
-                data.forEach(msg => {
-                    const div = document.createElement('div');
-                    div.innerHTML = `<b>${msg.name}</b> (${msg.time})：${msg.message}`;
-                    A1.appendChild(div);
-                });
-                A1.scrollTop = A1.scrollHeight;
-            } catch (err) {
-                A1.innerHTML = '<i>載入失敗</i>';
-            }
-        }
+      fetch(`${apiBase}/chat/send`, {
+        method: 'POST',
+        mode: 'cors', // ✅ 很關鍵
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: name, message: text })
+      })
+        .then(() => {
+          input.value = '';
+          loadMessages();
+        })
+        .catch(err => {
+          console.error("送出失敗", err);
+        });
+    }
 
 
-        // 每 3 秒刷新
-        setInterval(loadMessages, 1000);
-        loadMessages();
-    </script>
+    async function loadMessages() {
+      try {
+         const resp = await fetch(`${apiBase}/chat/messages`, {
+          method: 'GET', // 或 POST 之類
+          headers: {
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        const data = await resp.json();
+        messages.innerHTML = '';
+        data.forEach(msg => {
+          const div = document.createElement('div');
+          div.innerHTML = `<b>${msg.name}</b> (${msg.time})：${msg.message}`;
+          messages.appendChild(div);
+        });
+        messages.scrollTop = messages.scrollHeight;
+      } catch (err) {
+        messages.innerHTML = '<i>載入失敗</i>' + err;
+        console.error("載入訊息錯誤：", err); 0
+      }
+    }
+
+
+    setInterval(loadMessages, 500);
+    loadMessages();
+  </script>
+
 
 
 
