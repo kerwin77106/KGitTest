@@ -5,12 +5,32 @@
     <title></title>
 </head>
 <body> 
+    <div id="displayText"></div>
     <script>
     fetch(`http://localhost:8000/postdemo`, {
         method: 'POST',
         mode: 'cors', // ✅ 很關鍵
         body: 'Hello World!!!!!!!!!!!!!!!!!!!!!!!!'
     })
+
+        fetch('http://localhost:8000/getdemo', {
+            method: 'GET',
+            mode: 'cors' // 如果您的 HTML 頁面和 Server 不在同一個網域或埠號，這很重要
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text(); // 將 response body 解析為文字
+        })
+        .then(data => {
+            // 將從 API 取得的文字更新到 HTML 頁面上的 div 元素中
+            document.getElementById('displayText').innerText = data;
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            document.getElementById('displayText').innerText = 'Failed to fetch data.';
+        });
     </script>
 </body>
 </html>
