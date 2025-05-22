@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增訂單 - 車行管理</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { text-align: center; }
+        .form-container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input[type="text"],
+        .form-group input[type="tel"],
+        .form-group input[type="datetime-local"],
+        .form-group input[type="number"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group .checkbox-group label { font-weight: normal; margin-right: 10px; }
+        .form-group .checkbox-group input[type="checkbox"] { margin-right: 5px; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        .error-message { color: red; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <h2>新增訂單</h2>
+
+        <div class="form-group">
+            <label for="customerName">顧客姓名：</label>
+            <input type="text" id="customerName" name="customerName" required>
+        </div>
+
+        <div class="form-group">
+            <label for="customerPhone">顧客電話：</label>
+            <input type="tel" id="customerPhone" name="customerPhone" required>
+        </div>
+
+        <div class="form-group">
+            <label for="customerAddress">顧客地址：</label>
+            <input type="text" id="customerAddress" name="customerAddress" required>
+        </div>
+
+        <div class="form-group">
+            <label for="airport">機場：</label>
+            <select id="airport" name="airport" required>
+                <option value="">請選擇機場...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="terminal">航廈：</label>
+            <select id="terminal" name="terminal" required>
+                <option value="">請選擇航廈...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="serviceType">服務類型：</label>
+            <select id="serviceType" name="serviceType" required>
+                <option value="">請選擇服務類型...</option>
+                <option value="接機">接機</option>
+                <option value="送機">送機</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="scheduledPickupTime">預定用車時間：</label>
+            <input type="datetime-local" id="scheduledPickupTime" name="scheduledPickupTime" required>
+        </div>
+
+        <div class="form-group">
+            <label for="carType">車輛類型：</label>
+            <select id="carType" name="carType" required>
+                <option value="">請選擇車輛...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>加購項目：</label>
+            <div id="addonsContainer">
+                <p>正在載入加購項目...</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="totalAmount">訂單總金額：</label>
+            <input type="number" id="totalAmount" name="totalAmount" step="0.01" required placeholder="請手動輸入總金額">
+        </div>
+
+        <button type="button" onclick="submitOrder()">新增訂單</button>
+        <div id="submissionStatus" style="margin-top: 15px;"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        const API_AIRPORTS = [
+            { id: "TPE", name: "桃園國際機場" },
+            { id: "TSA", name: "台北松山機場" },
+            { id: "KHH", name: "高雄小港機場" }
+        ];
+        const API_TERMINALS = {
+            "TPE": [{ id: "1", name: "第一航廈" }, { id: "2", name: "第二航廈" }],
+            "TSA": [{ id: "1", name: "第一航廈" }, { id: "2", name: "第二航廈" }],
+            "KHH": [{ id: "D", name: "國內航廈" }, { id: "I", name: "國際航廈" }]
+        };
+
+        // DOM 元素
+        const airportSelect = document.getElementById('airport');
+        console.log("airportSelect element (global scope):", airportSelect); // 檢查全域獲取
+        const terminalSelect = document.getElementById('terminal');
+        console.log("terminalSelect element (global scope):", terminalSelect);
+        const carTypeSelect = document.getElementById('carType');
+        console.log("carTypeSelect element (global scope):", carTypeSelect);
+        const addonsContainer = document.getElementById('addonsContainer');
+        console.log("addonsContainer element (global scope):", addonsContainer);
+        const submissionStatusDiv = document.getElementById('submissionStatus');
+
+        async function populateSelectWithOptions(selectElement, apiUrl, valueField, textField, defaultOptionText = "請選擇...") {
+            console.log(`populateSelectWithOptions called for: ${selectElement.id}, URL: ${apiUrl}`);
+            if (!selectElement) {
+                console.error(`錯誤: populateSelectWithOptions 中的 selectElement (${selectElement ? selectElement.id : 'ID未知'}) 是 null!`);
+                return;
+            }
+            selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`;
+            try {
+                const response = await fetch(apiUrl);
+                console.log(`Workspace response status for ${apiUrl}: ${response.status}`);
+                if (!response.ok) {
+                    console.error(`無法獲取資料從 ${apiUrl}: ${response.status} ${response.statusText}`);
+                    selectElement.innerHTML = `<option value="">無法載入選項</option>`;
+                    return;
+                }
+                const data = await response.json();
+                console.log(`從 ${apiUrl} 獲取的原始資料:`, data);
+                if (Array.isArray(data)) {
+                    data.forEach(item => {
+                        console.log(`  正在為 ${selectElement.id} 創建選項: value=${item[valueField]}, text=${item[textField]}`);
+                        const option = document.createElement('option');
+                        option.value = item[valueField];
+                        option.textContent = item[textField];
+                        selectElement.appendChild(option);
+                    });
+                } else {
+                    console.error(`從 ${apiUrl} 獲取的資料格式不正確，應為陣列。收到的資料:`, data);
+                    selectElement.innerHTML = `<option value="">資料格式錯誤</option>`;
+                }
+            } catch (error) {
+                console.error(`填充下拉選單 ${selectElement.id} 時發生錯誤:`, error);
+                selectElement.innerHTML = `<option value="">載入時發生錯誤</option>`;
+            }
+            console.log(`populateSelectWithOptions for ${selectElement.id} finished.`);
+        }
+
+        function populateAirports() {
+            console.log("populateAirports 函式開始執行。");
+            if (!airportSelect) {
+                console.error("錯誤：在 populateAirports 中 airportSelect 是 null！");
+                return;
+            }
+            airportSelect.innerHTML = `<option value="">請選擇機場...</option>`;
+            console.log("模擬的機場資料 API_AIRPORTS:", API_AIRPORTS);
+            API_AIRPORTS.forEach(airport => {
+                console.log("正在處理機場:", airport.name);
+                const option = document.createElement('option');
+                option.value = airport.name;
+                option.textContent = airport.name;
+                airportSelect.appendChild(option);
+            });
+            console.log("populateAirports 函式執行完畢。");
+        }
+
+        function populateTerminals(selectedAirportName) {
+            console.log("populateTerminals 函式開始執行，選擇的機場是:", selectedAirportName);
+            if (!terminalSelect) {
+                console.error("錯誤：在 populateTerminals 中 terminalSelect 是 null！");
+                return;
+            }
+            terminalSelect.innerHTML = `<option value="">請選擇航廈...</option>`;
+            let terminalsToShow = [];
+            const airportData = API_AIRPORTS.find(a => a.name === selectedAirportName);
+            console.log("找到的 airportData for terminals:", airportData);
+
+            if (airportData && API_TERMINALS[airportData.id]) {
+                terminalsToShow = API_TERMINALS[airportData.id];
+            } else {
+                console.log(`機場 "${selectedAirportName}" (ID: ${airportData ? airportData.id : '未知'}) 在 API_TERMINALS 中無特定設定，或 airportData 未找到。提供預設航廈。`);
+                terminalsToShow = [{id: "1", name:"航廈1 (預設)"}, {id: "2", name:"航廈2 (預設)"}];
+            }
+            console.log("將要顯示的航廈:", terminalsToShow);
+            terminalsToShow.forEach(terminal => {
+                console.log("正在處理航廈:", terminal.name);
+                const option = document.createElement('option');
+                option.value = terminal.id;
+                option.textContent = terminal.name;
+                terminalSelect.appendChild(option);
+            });
+            console.log("populateTerminals 函式執行完畢。");
+        }
+        
+        async function populateCarTypes() {
+            console.log("populateCarTypes 函式開始執行。");
+            await populateSelectWithOptions(carTypeSelect, `${API_BASE_URL}/api/1/products/cars`, 'product_id', 'Product_name', '請選擇車輛類型...');
+            console.log("populateCarTypes 函式執行完畢。");
+        }
+
+        async function populateAddons() {
+            console.log("populateAddons 函式開始執行。");
+            if (!addonsContainer) {
+                console.error("錯誤：在 populateAddons 中 addonsContainer 是 null！");
+                addonsContainer.innerHTML = '<p>錯誤：找不到加購項目容器</p>';
+                return;
+            }
+            addonsContainer.innerHTML = '<p>正在載入加購項目...</p>';
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/1/products/addons`);
+                console.log(`Workspace response status for addons: ${response.status}`);
+                if (!response.ok) {
+                    console.error(`無法獲取加購項目: ${response.status} ${response.statusText}`);
+                    addonsContainer.innerHTML = '<p>無法載入加購項目</p>';
+                    return;
+                }
+                const addonData = await response.json();
+                console.log('從 /api/1/products/addons 獲取的原始資料:', addonData);
+
+                addonsContainer.innerHTML = ''; 
+                if (Array.isArray(addonData) && addonData.length > 0) {
+                    addonData.forEach(addon => {
+                        console.log("正在為加購項目創建 checkbox:", addon);
+                        const checkboxLabel = document.createElement('label');
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.name = 'addons';
+                        checkbox.value = addon.product_id;
+                        checkbox.id = 'addon-' + addon.product_id;
+                        
+                        checkboxLabel.appendChild(checkbox);
+                        checkboxLabel.appendChild(document.createTextNode(" " + addon.Product_name));
+                        
+                        const br = document.createElement('br');
+                        addonsContainer.appendChild(checkboxLabel);
+                        addonsContainer.appendChild(br);
+                    });
+                } else if (Array.isArray(addonData) && addonData.length === 0) {
+                     addonsContainer.textContent = '目前無加購項目。';
+                } else {
+                     console.error('加購項目 API 回傳格式不正確，應為陣列。收到的資料:', addonData);
+                     addonsContainer.textContent = '加購項目資料格式錯誤。';
+                }
+            } catch (error) {
+                console.error('填充加購項目時發生錯誤:', error);
+                addonsContainer.innerHTML = '<p>載入加購項目時發生錯誤</p>';
+            }
+            console.log("populateAddons 函式執行完畢。");
+        }
+
+        airportSelect.addEventListener('change', function() {
+            console.log("機場選擇已變更為:", this.value);
+            populateTerminals(this.value);
+        });
+
+    async function submitOrder() {
+        submissionStatusDiv.textContent = ''; // 清空先前的狀態訊息
+        submissionStatusDiv.className = '';   // 清空樣式
+
+        // 1. 收集表單數據
+        const customerName = document.getElementById('customerName').value;
+        const customerPhone = document.getElementById('customerPhone').value;
+        const customerAddress = document.getElementById('customerAddress').value;
+        const airport = document.getElementById('airport').value; // HTML 中 airportSelect 已被賦值給 airport
+        const terminal = document.getElementById('terminal').value; // HTML 中 terminalSelect 已被賦值給 terminal
+        const serviceType = document.getElementById('serviceType').value;
+        const scheduledPickupTime = document.getElementById('scheduledPickupTime').value;
+        const carTypeElement = document.getElementById('carType'); // HTML 中 carTypeSelect 已被賦值給 carType
+        const carProductId = carTypeElement ? carTypeElement.value : ""; // 確保元素存在
+        const totalAmountStr = document.getElementById('totalAmount').value;
+
+        // 收集加購項目
+        const selectedAddons = [];
+        const addonCheckboxes = document.querySelectorAll('#addonsContainer input[name="addons"]:checked');
+        addonCheckboxes.forEach(checkbox => {
+            selectedAddons.push({
+                productId: parseInt(checkbox.value), // 假設 checkbox 的 value 是 product_id
+                quantity: 1 // 假設加購項目數量固定為 1
+            });
+        });
+
+        // 基本的客戶端驗證 (您可以根據需要增強)
+        if (!customerName || !customerPhone || !customerAddress || !airport || !serviceType || !scheduledPickupTime || !carProductId || !totalAmountStr) {
+            submissionStatusDiv.textContent = '錯誤：所有必填欄位（顧客資料、機場、服務、用車時間、車型、總金額）都必須填寫！';
+            submissionStatusDiv.className = 'error-message'; // 您可以為 .error-message 添加 CSS 樣式
+            return;
+        }
+
+        let totalAmount;
+        try {
+            totalAmount = parseFloat(totalAmountStr);
+            if (isNaN(totalAmount)) {
+                throw new Error("總金額必須是有效的數字。");
+            }
+        } catch (error) {
+            submissionStatusDiv.textContent = '錯誤：總金額格式不正確。';
+            submissionStatusDiv.className = 'error-message';
+            return;
+        }
+
+        // 2. 組織數據為 JSON 物件
+        const orderData = {
+            customerName: customerName,
+            customerPhone: customerPhone,
+            customerAddress: customerAddress,
+            airport: airport,
+            terminal: terminal, // 注意：HTML 中的 terminalSelect 在 populateTerminals 時 value 應該是航廈的 ID 或名稱
+            serviceType: serviceType,
+            scheduledPickupTime: scheduledPickupTime, // 這會是 YYYY-MM-DDTHH:MM 格式
+            carProductId: parseInt(carProductId), // 後端預期可能是整數
+            selectedAddons: selectedAddons,
+            totalAmount: totalAmount
+        };
+
+        console.log('準備提交的訂單資料:', JSON.stringify(orderData, null, 2)); // 在瀏覽器控制台印出，方便偵錯
+        submissionStatusDiv.textContent = '正在提交訂單...';
+
+        // 3. 發送 HTTP POST 請求
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/orders/create`, { // 指定後端 API 端點
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json' // 告知後端我們傳送的是 JSON
+                },
+                body: JSON.stringify(orderData) // 將 JavaScript 物件轉換為 JSON 字串
+            });
+
+            // 4. 處理後端回應
+            if (response.ok) { // HTTP 狀態碼在 200-299 之間
+                const result = await response.json(); // 假設後端成功時會回傳 JSON (例如包含新訂單ID)
+                submissionStatusDiv.textContent = `訂單已成功新增！訂單 ID: ${result.orderId || '未知'}`;
+                submissionStatusDiv.className = 'success-message'; // 您可以為 .success-message 添加 CSS 樣式
+                // 可選：成功後清空表單
+                // document.getElementById('yourFormId').reset(); // 如果您有一個 <form> 標籤
+            } else {
+                // 後端回應錯誤 (例如 HTTP 400, 500)
+                const errorResult = await response.json(); // 嘗試解析後端回傳的錯誤訊息 (JSON 格式)
+                submissionStatusDiv.textContent = `訂單提交失敗: ${errorResult.message || response.statusText || '未知錯誤'}`;
+                submissionStatusDiv.className = 'error-message';
+                console.error('後端錯誤回應:', errorResult);
+            }
+        } catch (error) {
+            // 網路錯誤或其他 fetch 本身的錯誤
+            submissionStatusDiv.textContent = '提交訂單時發生網路連線錯誤，請稍後再試。';
+            submissionStatusDiv.className = 'error-message';
+            console.error('Fetch API 錯誤:', error);
+        }
+    }
+        window.onload = () => {
+            console.log("window.onload 事件已觸發！");
+            
+            populateAirports(); 
+
+            // 【暫時註解掉以下呼叫，先確保 populateAirports 能工作】
+            // 【在 populateAirports 成功後，再逐步打開這些】
+            populateTerminals(airportSelect.value); // 機場選擇後，航廈應根據選擇的機場來填充
+            populateCarTypes();
+            populateAddons();
+        };
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <title>簡單表單</title>
+</head>
+
+<body>
+  <h2>新增訂單</h2>
+  <label for="name">姓名：</label>
+  <input type="text" id="name">
+  <label for="phone">電話：</label>
+  <input type="text" id="phone">
+  <label for="license_plate">車牌號碼：</label>
+  <input type="text" id="license_plate">
+  <label for="vehicle_brand">車輛廠牌：</label>
+  <select id="vehicle_brand"></select>
+  <button onclick="insertpost()">新增</button>
+
+  <script>
+    // API 端點定義
+    const apiCustomer = 'http://localhost:8000/api/1/customers';
+    const apiProduct = 'http://localhost:8000/api/1/products';
+    const apiShipper = 'http://localhost:8000/api/1/shippers';
+    const apidrivers = 'http://localhost:8000/api/1/drivers'; // 將從此 API 獲取司機資料
+
+    // 獲取頁面元素的參照
+    const nameInput = document.getElementById("name"); // 原為 name
+    const phoneInput = document.getElementById("phone"); // 原為 phone
+    const licensePlateInput = document.getElementById("license_plate"); // 修正了原先可能的拼寫錯誤 snlicense_plateame
+    const vehicle_brand = document.getElementById("vehicle_brand"); // 車輛廠牌的下拉選單
+
+    // 填充車輛廠牌下拉選單的函式
+    async function cnameAdd() {
+      try {
+        const resp = await fetch(apidrivers); // 從司機 API 獲取資料
+        if (!resp.ok) {
+          // 如果 HTTP 回應狀態不是成功 (例如 404, 500)
+          console.error(`HTTP 錯誤: ${resp.status}`);
+          if (vehicle_brand) vehicle_brand.innerHTML = '<option value="">載入廠牌失敗</option>';
+          return; // 結束函式執行
+        }
+        
+        const driversData = await resp.json(); // 解析 JSON 回應為 JavaScript 陣列
+
+        // 檢查回傳的資料是否為陣列
+        if (!Array.isArray(driversData)) {
+          console.error('從 API 回傳的資料格式不正確，並非陣列。');
+          if (vehicle_brand) vehicle_brand.innerHTML = '<option value="">資料格式錯誤</option>';
+          return;
+        }
+
+        // 確保 vehicle_brand 元素存在
+        if (!vehicle_brand) {
+            console.error("錯誤：在頁面中找不到 ID 為 'vehicle_brand' 的下拉選單元素。");
+            return;
+        }
+
+        // 清空下拉選單中現有的所有選項
+        vehicle_brand.innerHTML = '';
+        
+        // 加入一個提示使用者選擇的預設選項
+        let defaultOption = document.createElement("option");
+        defaultOption.value = ""; // 預設選項的值通常設為空
+        defaultOption.textContent = "請選擇廠牌"; // 顯示的提示文字
+        vehicle_brand.append(defaultOption);
+
+        // 如果 API 回傳的司機資料陣列中有內容
+        if (driversData.length > 0) {
+          driversData.forEach(driver => {
+            // 從每一筆司機資料中獲取 vehicle_brand (車輛廠牌)
+            let brandName = driver["vehicle_brand"];
+
+            // 確保廠牌名稱存在且不是只包含空白的字串
+            if (brandName && brandName.trim() !== "") {
+              let op = document.createElement("option"); // 建立新的 <option> 元素
+              op.value = brandName;       // 設定選項的 value 為廠牌名稱
+              op.textContent = brandName; // 設定選項顯示的文字也為廠牌名稱
+              vehicle_brand.append(op);   // 將此選項附加到 vehicle_brand 下拉選單中
+            }
+          });
+        } else {
+          // 如果 API 回傳的司機資料陣列是空的
+          console.log('資料庫中沒有司機資料，或司機資料中沒有廠牌資訊。');
+          // 此時下拉選單只會有 "請選擇廠牌" 這個預設選項
+        }
+
+      } catch (err) {
+        // 如果在 try 區塊中的任何地方發生 JavaScript 錯誤
+        console.error("cnameAdd 函式執行時發生錯誤:", err);
+        if (vehicle_brand) {
+          vehicle_brand.innerHTML = '<option value="">載入廠牌時發生錯誤</option>';
+        }
+      }
+    }
+
+    // 當頁面載入完成後，自動呼叫 cnameAdd 函式來填充下拉選單
+    cnameAdd();
+
+    // 其他函式 (pnameAdd, snameAdd, insertpost) 保持您原有的內容
+    async function pnameAdd() {
+      // 您的 pnameAdd 邏輯
+    }
+    // pnameAdd(); // 如果需要，取消註解以執行
+
+    async function snameAdd() {
+      // 您的 snameAdd 邏輯
+    }
+    // snameAdd(); // 如果需要，取消註解以執行
+    
+    function insertpost() {
+      // 您的 insertpost 邏輯
+      let selectedBrand = vehicle_brand.value; // 獲取當前選擇的廠牌
+      console.log("選擇的廠牌是:", selectedBrand);
+      
+      // 以下是您原有的註解程式碼，您可以根據需要修改或使用
+      /*
+      if (pname && price) {
+        let returnbody= JSON.stringify({ table:"products", pname: pname,  price: price});
+        console.log(returnbody);
+        //格式檢查
+        fetch('http://localhost:8000/api/2/insert', {
+          method: 'POST',
+          mode: 'cors', // ✅ 很關鍵
+          body: returnbody,
+        })
+        console.log("完成fetch")
+      } else {
+        alert("請輸入資料");
+      }
+      */
+    }
+  </script>
+</body>
+</html>
