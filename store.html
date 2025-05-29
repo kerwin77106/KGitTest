@@ -1,58 +1,94 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>大樹KERWIN車行 - 店家專用</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <style>
         /* 自定義樣式 (第一個網頁原有的) */
         body {
-            display: flex; /* 使用 Flexbox 佈局 */
-            min-height: 100vh; /* 讓內容至少佔據整個視窗高度 */
+            display: flex;
+            /* 使用 Flexbox 佈局 */
+            min-height: 100vh;
+            /* 讓內容至少佔據整個視窗高度 */
         }
+
         #sidebar {
-            width: 250px; /* 固定側邊欄寬度 */
-            min-width: 250px; /* 最小寬度 */
-            background-color: #343a40; /* 深色背景 */
-            color: white; /* 白色文字 */
+            width: 250px;
+            /* 固定側邊欄寬度 */
+            min-width: 250px;
+            /* 最小寬度 */
+            background-color: #343a40;
+            /* 深色背景 */
+            color: white;
+            /* 白色文字 */
             padding-top: 20px;
-            flex-shrink: 0; /* 不壓縮側邊欄 */
+            flex-shrink: 0;
+            /* 不壓縮側邊欄 */
         }
+
         #sidebar .nav-link {
             color: white;
             padding: 10px 20px;
-            border-radius: 5px; /* 圓角 */
+            border-radius: 5px;
+            /* 圓角 */
             margin-bottom: 5px;
         }
+
         #sidebar .nav-link:hover {
-            background-color: #007bff; /* 懸停時的藍色背景 */
+            background-color: #007bff;
+            /* 懸停時的藍色背景 */
             color: white;
         }
+
         #main-content {
-            flex-grow: 1; /* 主內容區塊佔據剩餘空間 */
+            flex-grow: 1;
+            /* 主內容區塊佔據剩餘空間 */
             padding: 20px;
-            background-color: #f8f9fa; /* 淺灰色背景 */
+            background-color: #f8f9fa;
+            /* 淺灰色背景 */
         }
+
         .navbar-brand {
-            font-size: 1.8rem; /* 標題字體大小 */
+            font-size: 1.8rem;
+            /* 標題字體大小 */
             font-weight: bold;
-            color: #007bff !important; /* 標題顏色 */
+            color: #007bff !important;
+            /* 標題顏色 */
         }
+
         .content-section {
             background-color: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1); /* 輕微陰影 */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            /* 輕微陰影 */
         }
 
         /* 從第二個網頁 (新增訂單表單) 複製過來的 CSS 規則 */
-        #main-content h2 { text-align: center; margin-bottom: 20px; } /* 針對新增訂單的 h2 標題 */
+        #main-content h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* 針對新增訂單的 h2 標題 */
         .form-container {
             margin: auto;
         }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
         .form-group input[type="text"],
         .form-group input[type="tel"],
         .form-group input[type="datetime-local"],
@@ -65,19 +101,45 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
-        .form-group .checkbox-group label { font-weight: normal; margin-right: 10px; }
-        .form-group .checkbox-group input[type="checkbox"] { margin-right: 5px; }
 
-        .form-container button[type="button"] { /* 特定於 .form-container 內的按鈕 */
-            background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;
+        .form-group .checkbox-group label {
+            font-weight: normal;
+            margin-right: 10px;
         }
+
+        .form-group .checkbox-group input[type="checkbox"] {
+            margin-right: 5px;
+        }
+
+        .form-container button[type="button"] {
+            /* 特定於 .form-container 內的按鈕 */
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
         .form-container button[type="button"]:hover {
             background-color: #0056b3;
         }
-        .error-message { color: red; font-size: 0.9em; margin-top: 5px; }
-        .success-message { color: green; font-size: 0.9em; margin-top: 5px; }
+
+        .error-message {
+            color: red;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .success-message {
+            color: green;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
     </style>
 </head>
+
 <body>
 
     <nav id="sidebar" class="d-flex flex-column">
@@ -127,10 +189,159 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+    <div class="modal fade" id="assignDriverModal" tabindex="-1" aria-labelledby="assignDriverModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignDriverModalLabel">指派司機</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>正在為訂單 <strong id="assignOrderDisplayId"></strong> 指派司機。</p>
+                    <input type="hidden" id="assignOrderIdHidden">
+                    <div class="mb-3">
+                        <label for="driverSelect" class="form-label">選擇司機：</label>
+                        <select class="form-select" id="driverSelect" aria-label="選擇司機">
+                            <option selected value="">正在載入司機列表...</option>
+                        </select>
+                    </div>
+                    <div id="assignDriverError" class="text-danger mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="submitDriverAssignment()">確認指派</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+        crossorigin="anonymous"></script>
     <script>
         const API_BASE_URL = 'http://localhost:8000'; // 全域 API 基本 URL
+
+        let assignDriverModalInstance = null; // 用於保存 Bootstrap Modal 實例
+
+        // 初始化 Modal 實例 (可以在 DOMContentLoaded 中執行一次)
+        document.addEventListener('DOMContentLoaded', function () {
+            const assignDriverModalElement = document.getElementById('assignDriverModal');
+            if (assignDriverModalElement) {
+                assignDriverModalInstance = new bootstrap.Modal(assignDriverModalElement);
+            }
+        });
+
+        async function openAssignDriverModal(orderId, currentDriverId) {
+            if (!assignDriverModalInstance) {
+                console.error("Assign Driver Modal 實例未初始化。");
+                alert("指派司機介面錯誤，請重試。");
+                return;
+            }
+
+            document.getElementById('assignOrderDisplayId').textContent = `#${orderId}`;
+            document.getElementById('assignOrderIdHidden').value = orderId;
+            const driverSelect = document.getElementById('driverSelect');
+            const assignDriverError = document.getElementById('assignDriverError');
+            assignDriverError.textContent = ''; // 清除之前的錯誤訊息
+            driverSelect.innerHTML = '<option selected value="">正在載入司機列表...</option>'; // 重設下拉選單
+
+            try {
+                // 獲取司機列表 (假設您有 /api/1/drivers 端點)
+                const response = await fetch(`${API_BASE_URL}/api/1/drivers`);
+                if (!response.ok) {
+                    throw new Error(`無法獲取司機列表: ${response.status}`);
+                }
+                const drivers = await response.json();
+
+                driverSelect.innerHTML = '<option value="">-- 請選擇一位司機 --</option>'; // 預設選項
+                // 可以新增一個"取消指派"的選項，如果 currentDriverId 存在
+                if (currentDriverId !== null && currentDriverId !== undefined) {
+                    // 這裡的 value 設為一個特殊值，例如 -1 或 "UNASSIGN", 後端需要能識別
+                    // 但您目前的後端是直接 UPDATE driver_id，所以若要取消指派，應該傳遞 NULL
+                    // 為了簡單起見，我們先不加取消指派選項，或讓使用者選擇一個 "無" 司機 (如果司機列表有此選項)
+                    // 或者，後端 AssignDriverHandler 需要能處理 driver_id 為 NULL 的情況來取消指派
+                }
+
+                if (drivers && drivers.length > 0) {
+                    drivers.forEach(driver => {
+                        const option = document.createElement('option');
+                        option.value = driver.driver_id; // 確保您的司機 API 回傳 driver_id
+                        option.textContent = `${driver.name} (${driver.license_plate || '車牌未知'})`;
+                        if (driver.driver_id === currentDriverId) {
+                            option.selected = true; // 如果有當前司機，則預選
+                        }
+                        driverSelect.appendChild(option);
+                    });
+                } else {
+                    driverSelect.innerHTML = '<option value="">目前無可用司機</option>';
+                }
+                assignDriverModalInstance.show(); // 顯示 Modal
+            } catch (error) {
+                console.error("打開指派司機 Modal 時出錯:", error);
+                assignDriverError.textContent = `錯誤: ${error.message}`;
+                // 即使出錯也嘗試顯示 Modal，讓使用者看到錯誤訊息
+                assignDriverModalInstance.show();
+                driverSelect.innerHTML = '<option value="">無法載入司機</option>';
+            }
+        }
+
+        async function submitDriverAssignment() {
+            const orderId = document.getElementById('assignOrderIdHidden').value;
+            const driverSelect = document.getElementById('driverSelect');
+            const driverId = driverSelect.value;
+            const assignDriverError = document.getElementById('assignDriverError');
+            assignDriverError.textContent = ''; // 清除錯誤
+
+            if (!driverId) {
+                assignDriverError.textContent = '請選擇一位司機。';
+                return;
+            }
+
+            const payload = {
+                order_id: parseInt(orderId),
+                driver_id: parseInt(driverId) // 後端 AssignDriverHandler 預期是數字
+            };
+
+            console.log("準備指派司機，Payload:", payload);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/order/assign-driver`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await response.json(); // 嘗試解析 JSON 回應
+
+                if (response.ok) {
+                    alert(result.message || '司機指派成功！');
+                    if (assignDriverModalInstance) {
+                        assignDriverModalInstance.hide();
+                    }
+                    // 更新前端列表：您可以選擇重新載入整個訂單列表，或只更新該行的司機狀態
+                    // 簡單起見，先重新載入當前激活的 Tab 的訂單
+                    const activeTabButton = document.querySelector('#queryOrderTabs .nav-link.active');
+                    if (activeTabButton) {
+                        activeTabButton.click(); // 重新觸發當前 Tab 的點擊事件以刷新列表
+                    } else {
+                        // 如果找不到 active tab，可以嘗試刷新今日訂單
+                        document.getElementById('today-orders-tab')?.click();
+                    }
+                } else {
+                    throw new Error(result.error || `指派失敗: ${response.status}`);
+                }
+            } catch (error) {
+                console.error("指派司機 API 請求失敗:", error);
+                assignDriverError.textContent = `指派錯誤: ${error.message}`;
+                alert(`指派錯誤: ${error.message}`);
+            }
+        }
 
         // --- 新增司機相關函式 ---
         async function submitNewDriver() {
@@ -141,7 +352,7 @@
             const notesInput = document.getElementById("driverNotesInput");
             const statusDiv = document.getElementById("addDriverStatus");
 
-            if(statusDiv) statusDiv.innerHTML = '';
+            if (statusDiv) statusDiv.innerHTML = '';
 
             const name = nameInput ? nameInput.value : '';
             const phone = phoneInput ? phoneInput.value : '';
@@ -150,7 +361,7 @@
             const notes = notesInput ? notesInput.value : '';
 
             if (!name || !phone) {
-                if(statusDiv) statusDiv.innerHTML = '<p class="text-danger">錯誤：司機姓名和電話為必填欄位！</p>';
+                if (statusDiv) statusDiv.innerHTML = '<p class="text-danger">錯誤：司機姓名和電話為必填欄位！</p>';
                 alert("司機姓名和電話為必填欄位！");
                 return;
             }
@@ -163,7 +374,7 @@
             const jsonBodyToSend = JSON.stringify(payloadObject);
             console.log("Frontend: JSON body for new driver:", jsonBodyToSend);
 
-            if(statusDiv) statusDiv.innerHTML = '<p class="text-info">正在新增司機資料...</p>';
+            if (statusDiv) statusDiv.innerHTML = '<p class="text-info">正在新增司機資料...</p>';
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/2/insert`, {
@@ -173,20 +384,20 @@
                 });
 
                 if (response.ok) {
-                    if(statusDiv) statusDiv.innerHTML = '<p class="text-success">司機資料已成功新增！</p>';
+                    if (statusDiv) statusDiv.innerHTML = '<p class="text-success">司機資料已成功新增！</p>';
                     alert("司機資料已成功新增！");
-                    if(nameInput) nameInput.value = ''; if(phoneInput) phoneInput.value = '';
-                    if(licensePlateInput) licensePlateInput.value = ''; if(vehicleBrandInput) vehicleBrandInput.value = '';
-                    if(notesInput) notesInput.value = '';
+                    if (nameInput) nameInput.value = ''; if (phoneInput) phoneInput.value = '';
+                    if (licensePlateInput) licensePlateInput.value = ''; if (vehicleBrandInput) vehicleBrandInput.value = '';
+                    if (notesInput) notesInput.value = '';
                 } else {
                     const errorText = await response.text();
                     console.error('新增司機失敗:', response.status, errorText);
-                    if(statusDiv) statusDiv.innerHTML = `<p class="text-danger">新增司機失敗：${response.status} - ${escapeHtml(errorText) || '未知錯誤'}</p>`;
+                    if (statusDiv) statusDiv.innerHTML = `<p class="text-danger">新增司機失敗：${response.status} - ${escapeHtml(errorText) || '未知錯誤'}</p>`;
                     alert(`新增司機失敗：${response.status} - ${errorText || '未知錯誤'}`);
                 }
             } catch (error) {
                 console.error('提交新增司機請求時發生錯誤:', error);
-                if(statusDiv) statusDiv.innerHTML = '<p class="text-danger">提交請求時發生錯誤，請檢查網路連線或聯絡管理員。</p>';
+                if (statusDiv) statusDiv.innerHTML = '<p class="text-danger">提交請求時發生錯誤，請檢查網路連線或聯絡管理員。</p>';
                 alert("提交請求時發生錯誤，請檢查網路連線。");
             }
         }
@@ -194,8 +405,8 @@
         function escapeHtml(unsafe) {
             if (unsafe == null) return '';
             return String(unsafe)
-                 .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         // --- 查詢司機相關函式 ---
@@ -237,14 +448,14 @@
                 noResultsMessage.className = 'alert alert-danger';
                 noResultsMessage.style.display = 'block';
             } finally {
-                if(loadingMessage) loadingMessage.style.display = 'none';
+                if (loadingMessage) loadingMessage.style.display = 'none';
             }
         }
 
         function displayDrivers(drivers) {
             const driverResultsBody = document.getElementById('driverResultsBody');
             const noResultsMessage = document.getElementById('noDriverResultsMessage');
-            
+
             noResultsMessage.className = 'alert alert-info';
             noResultsMessage.textContent = '目前沒有司機資料。';
 
@@ -252,7 +463,7 @@
                 console.error("displayDrivers: driverResultsBody not found");
                 return;
             }
-            
+
             driverResultsBody.innerHTML = '';
 
             if (!drivers || drivers.length === 0) {
@@ -282,10 +493,180 @@
         function editDriver(driverId) {
             alert(`編輯司機 ID: ${driverId} (此功能待實現)`);
         }
-        
-        function viewOrderDetails(orderId) { // 新增訂單詳情的預留函式
-             alert(`查看訂單詳情 ID: ${orderId} (此功能待實現)`);
+
+        async function viewOrderDetails(orderId) { // orderId 應該是您訂單的純數字 ID
+            const contentDisplay = document.getElementById('content-display');
+            if (!contentDisplay) {
+                console.error("嚴重錯誤: 找不到 content-display 元素。");
+                alert("頁面結構錯誤，無法顯示訂單詳情。");
+                return;
+            }
+
+            // 顯示載入狀態
+            contentDisplay.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"><span class="visually-hidden">Loading...</span></div><h4 class="mt-2">正在載入訂單 #${orderId} 的詳細資料...</h4></div>`;
+
+            try {
+                // 確保 API 端點與您 Server.java 中設定的一致
+                const response = await fetch(`${API_BASE_URL}/api/order/details/${orderId}`);
+                if (!response.ok) {
+                    let errorMsg = `HTTP 錯誤 ${response.status}`;
+                    try {
+                        const errorResult = await response.json();
+                        errorMsg = errorResult.message || errorMsg;
+                    } catch (e) {
+                        // 如果回應不是 JSON 或解析失敗，使用 response.statusText
+                        errorMsg = response.statusText || errorMsg;
+                    }
+                    throw new Error(`無法獲取訂單詳情: ${errorMsg}`);
+                }
+                const orderData = await response.json();
+                if (Object.keys(orderData).length === 0) { // 檢查是否為空物件
+                    throw new Error(`找不到訂單 #${orderId} 的資料，或回傳資料為空。`);
+                }
+                renderOrderDetails(orderData); // 呼叫新的函式來顯示資料
+            } catch (error) {
+                console.error('獲取訂單詳情失敗:', error);
+                contentDisplay.innerHTML = `<div class="alert alert-danger">無法載入訂單詳情：${error.message} <br><button class="btn btn-secondary btn-sm mt-2" onclick="goBackToQueryOrder()">返回查詢列表</button></div>`;
+            }
         }
+
+        function renderOrderDetails(data) {
+            const contentDisplay = document.getElementById('content-display');
+
+            // 處理加購項目列表 (來自逗號分隔的字串)
+            let addonsDisplayHtml = '<span class="text-muted">無</span>'; // 預設為 "無"
+            if (data.addon_items_list && data.addon_items_list.trim() !== "" && data.addon_items_list.toLowerCase() !== "null") {
+                const addonsArray = data.addon_items_list.split(',').map(item => item.trim()).filter(item => item !== ""); // 過濾掉空字串
+                if (addonsArray.length > 0) {
+                    addonsDisplayHtml = '<ul class="list-unstyled mb-0">';
+                    addonsArray.forEach(addon => {
+                        addonsDisplayHtml += `<li>- ${escapeHtml(addon)}</li>`;
+                    });
+                    addonsDisplayHtml += '</ul>';
+                }
+            }
+
+            // 處理司機資訊
+            let driverInfoHtml = '';
+            if (data.driver_name && data.driver_name !== '未指派') {
+                driverInfoHtml = `
+            <p class="mb-1"><strong>司機姓名：</strong> ${escapeHtml(data.driver_name)}</p>
+            <p class="mb-1"><strong>司機電話：</strong> ${escapeHtml(data.driver_phone || 'N/A')}</p>
+            <p class="mb-1"><strong>車牌號碼：</strong> ${escapeHtml(data.driver_license_plate || 'N/A')}</p>
+            <p class="mb-0"><strong>車輛廠牌：</strong> ${escapeHtml(data.driver_vehicle_brand || 'N/A')}</p>
+        `;
+            } else {
+                driverInfoHtml = `<p class="mb-0"><strong>司機：</strong> <span class="text-muted">未指派</span></p>`;
+            }
+
+            // 格式化總金額
+            const formattedTotalAmount = data.total_amount != null
+                ? Number(data.total_amount).toLocaleString('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                : '<span class="text-muted">N/A</span>';
+
+            // 格式化預定時間
+            let formattedScheduledTime = '<span class="text-muted">N/A</span>';
+            if (data.scheduled_pickup_time && data.scheduled_pickup_time !== 'N/A') {
+                try {
+                    // 後端應回傳標準格式如 YYYY-MM-DD HH:MM:SS
+                    // JavaScript Date constructor 可以處理 YYYY-MM-DDTHH:MM:SS
+                    const dateStr = data.scheduled_pickup_time.includes('T') ? data.scheduled_pickup_time : data.scheduled_pickup_time.replace(' ', 'T');
+                    const dateObj = new Date(dateStr);
+                    if (!isNaN(dateObj.getTime())) { // 檢查是否為有效日期
+                        formattedScheduledTime = dateObj.toLocaleString('zh-TW', {
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit', hour12: false
+                        }).replace(/\//g, '-'); // 將 / 替換為 -
+                    } else {
+                        formattedScheduledTime = escapeHtml(data.scheduled_pickup_time);
+                    }
+                } catch (e) {
+                    console.warn("日期格式化錯誤 for scheduled_pickup_time:", data.scheduled_pickup_time, e);
+                    formattedScheduledTime = escapeHtml(data.scheduled_pickup_time);
+                }
+            }
+
+            const detailsHtml = `
+        <div id="orderDetailsView" class="content-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">訂單詳細資料 - #${escapeHtml(String(data.order_id))}</h4>
+                <button class="btn btn-sm btn-outline-secondary" onclick="goBackToQueryOrder()">返回查詢列表</button>
+            </div>
+            <hr class="mt-0">
+            <div class="row mb-3">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <div class="card">
+                        <div class="card-header"><h5>顧客資訊</h5></div>
+                        <div class="card-body">
+                            <p class="mb-1"><strong>姓名：</strong> ${escapeHtml(data.customer_name)}</p>
+                            <p class="mb-1"><strong>電話：</strong> ${escapeHtml(data.customer_phone)}</p>
+                            <p class="mb-0"><strong>地址：</strong> ${escapeHtml(data.address)}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5>服務資訊</h5></div>
+                        <div class="card-body">
+                            <p class="mb-1"><strong>服務類型：</strong> ${escapeHtml(data.service_type)}</p>
+                            <p class="mb-1"><strong>預定時間：</strong> ${formattedScheduledTime}</p>
+                            <p class="mb-1"><strong>機場：</strong> ${escapeHtml(data.airport)}</p>
+                            <p class="mb-0"><strong>航廈：</strong> ${escapeHtml(data.terminal)}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6 mb-3 mb-md-0">
+                     <div class="card">
+                        <div class="card-header"><h5>車輛與項目</h5></div>
+                        <div class="card-body">
+                            <p class="mb-1"><strong>車型：</strong> ${escapeHtml(data.car_model || '<span class="text-muted">未指定</span>')}</p>
+                            <div><strong>加購項目：</strong>${addonsDisplayHtml}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><h5>金額與狀態</h5></div>
+                        <div class="card-body">
+                            <p class="mb-1"><strong>總金額：</strong> ${formattedTotalAmount}</p>
+                            <p class="mb-0"><strong>訂單狀態：</strong> ${escapeHtml(data.order_status)}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header"><h5>司機資訊</h5></div>
+                <div class="card-body">
+                    ${driverInfoHtml}
+                </div>
+            </div>
+        </div>
+    `;
+            contentDisplay.innerHTML = detailsHtml;
+        }
+
+        // 3. **新增** goBackToQueryOrder 函式
+        function goBackToQueryOrder() {
+            // 模擬點擊「查詢訂單」導覽連結以重新載入該視圖
+            const queryOrderLink = document.querySelector('a.nav-link[href="#queryOrder"]');
+            if (queryOrderLink && typeof queryOrderLink.click === 'function') {
+                // 觸發點擊前，確保查詢訂單的 tab 內容是初始狀態或被清空
+                // (這取決於您的 initializeQueryOrderView 如何處理重新進入)
+                // 或者，更簡單的方式是讓 click 事件本身去觸發內容的重新渲染
+                queryOrderLink.click();
+            } else {
+                console.error("無法找到 #queryOrder 連結或其 click 方法無效。");
+                alert("無法返回列表，請手動點擊左側選單。");
+                // 作為備用，直接重新載入頁面到查詢訂單的 hash
+                // window.location.hash = '#queryOrder';
+                // window.location.reload(); // 強制重載可能會丟失一些狀態，但能確保重新初始化
+            }
+        }
+
 
 
         // --- 新增訂單表單相關 (從 add_order_form.html 整合) ---
@@ -333,20 +714,20 @@
             // console.log(`populateSelectWithOptions for ${selectElement.id} finished.`);
         }
 
-        function populateAirports() { /* ... populateAirports 完整定義 ... */ 
+        function populateAirports() { /* ... populateAirports 完整定義 ... */
             // console.log("populateAirports 函式開始執行。");
             if (!airportSelect) { console.error("錯誤：在 populateAirports 中 airportSelect 是 null！"); return; }
             airportSelect.innerHTML = `<option value="">請選擇機場...</option>`;
             API_AIRPORTS.forEach(airport => {
                 const option = document.createElement('option');
-                option.value = airport.name; 
+                option.value = airport.name;
                 option.textContent = airport.name;
                 airportSelect.appendChild(option);
             });
             // console.log("populateAirports 函式執行完畢。");
         }
 
-        function populateTerminals(selectedAirportName) { /* ... populateTerminals 完整定義 ... */ 
+        function populateTerminals(selectedAirportName) { /* ... populateTerminals 完整定義 ... */
             // console.log("populateTerminals 函式開始執行，選擇的機場是:", selectedAirportName);
             if (!terminalSelect) { console.error("錯誤：在 populateTerminals 中 terminalSelect 是 null！"); return; }
             terminalSelect.innerHTML = `<option value="">請選擇航廈...</option>`;
@@ -365,8 +746,8 @@
             });
             // console.log("populateTerminals 函式執行完畢。");
         }
-        
-        async function populateCarTypes() { /* ... populateCarTypes 完整定義 ... */ 
+
+        async function populateCarTypes() { /* ... populateCarTypes 完整定義 ... */
             // console.log("populateCarTypes 函式開始執行。");
             if (!carTypeSelect) { console.error("錯誤：在 populateCarTypes 中 carTypeSelect 是 null！"); return; }
             await populateSelectWithOptions(carTypeSelect, `${API_BASE_URL}/api/1/products/cars`, 'product_id', 'Product_name', '請選擇車輛類型...');
@@ -375,16 +756,16 @@
 
         async function populateAddons() { /* ... populateAddons 完整定義 ... */
             // console.log("populateAddons 函式開始執行。");
-            if (!addonsContainer) { console.error("錯誤：在 populateAddons 中 addonsContainer 是 null！"); if(document.getElementById('addonsContainer')) document.getElementById('addonsContainer').innerHTML = '<p>錯誤：找不到加購項目容器</p>'; return; }
+            if (!addonsContainer) { console.error("錯誤：在 populateAddons 中 addonsContainer 是 null！"); if (document.getElementById('addonsContainer')) document.getElementById('addonsContainer').innerHTML = '<p>錯誤：找不到加購項目容器</p>'; return; }
             addonsContainer.innerHTML = '<p>正在載入加購項目...</p>';
             try {
                 const response = await fetch(`${API_BASE_URL}/api/1/products/addons`);
                 if (!response.ok) { addonsContainer.innerHTML = '<p>無法載入加購項目</p>'; return; }
                 const addonData = await response.json();
-                addonsContainer.innerHTML = ''; 
+                addonsContainer.innerHTML = '';
                 if (Array.isArray(addonData) && addonData.length > 0) {
                     addonData.forEach(addon => {
-                        const checkboxLabel = document.createElement('label'); checkboxLabel.style.display = 'block'; 
+                        const checkboxLabel = document.createElement('label'); checkboxLabel.style.display = 'block';
                         const checkbox = document.createElement('input'); checkbox.type = 'checkbox';
                         checkbox.name = 'addons'; checkbox.value = addon.product_id; checkbox.id = 'addon-' + addon.product_id;
                         checkboxLabel.appendChild(checkbox); checkboxLabel.appendChild(document.createTextNode(" " + addon.Product_name));
@@ -392,19 +773,19 @@
                     });
                 } else if (Array.isArray(addonData) && addonData.length === 0) {
                     addonsContainer.textContent = '目前無加購項目。';
-                } else { addonsContainer.textContent = '加購項目資料格式錯誤。';}
+                } else { addonsContainer.textContent = '加購項目資料格式錯誤。'; }
             } catch (error) { addonsContainer.innerHTML = '<p>載入加購項目時發生錯誤</p>'; }
             // console.log("populateAddons 函式執行完畢。");
-         }
+        }
 
-        window.submitOrder = async function() { /* ... submitOrder 完整定義 ... */ 
+        window.submitOrder = async function () { /* ... submitOrder 完整定義 ... */
             if (!submissionStatusDiv) { alert("提交狀態顯示區域未準備好，請重試。"); return; }
-            submissionStatusDiv.textContent = ''; submissionStatusDiv.className = '';  
+            submissionStatusDiv.textContent = ''; submissionStatusDiv.className = '';
             const customerName = document.getElementById('customerName').value;
             const customerPhone = document.getElementById('customerPhone').value;
             // ... (獲取其他表單欄位值) ...
-            const airport = document.getElementById('airport').value; 
-            const terminal = document.getElementById('terminal').value; 
+            const airport = document.getElementById('airport').value;
+            const terminal = document.getElementById('terminal').value;
             const serviceTypeVal = document.getElementById('serviceType').value; // Renamed to avoid conflict
             const scheduledPickupTimeVal = document.getElementById('scheduledPickupTime').value; // Renamed
             const carTypeElement = document.getElementById('carType');
@@ -413,6 +794,17 @@
 
             const selectedAddons = [];
             const addonCheckboxes = document.querySelectorAll('#addonsContainer input[name="addons"]:checked');
+            let addonIdArray = [];
+            addonCheckboxes.forEach(checkbox => {
+                addonIdArray.push(checkbox.value); // 收集所有選中的 productId (字串形式)
+            });
+            let selectedAddons_payload = []; // 如果沒有加購項目，就是空陣列
+            if (addonIdArray.length > 0) {
+                let concatenated_ids_string = addonIdArray.join('&'); // 用 '&' 串接所有 ID
+                selectedAddons_payload = [{ "productId": concatenated_ids_string }]; // 放入一個物件中，再放入陣列
+            }
+
+
             addonCheckboxes.forEach(checkbox => { selectedAddons.push({ productId: parseInt(checkbox.value) }); });
 
             if (!customerName || !customerPhone || !document.getElementById('customerAddress').value || !airport || !terminal || !serviceTypeVal || !scheduledPickupTimeVal || !carProductId || !totalAmountStr) {
@@ -423,25 +815,25 @@
             }
             let totalAmount;
             try {
-                totalAmount = parseFloat(totalAmountStr); if (isNaN(totalAmount) || totalAmount <=0) { throw new Error("總金額必須是有效的正數。"); }
+                totalAmount = parseFloat(totalAmountStr); if (isNaN(totalAmount) || totalAmount <= 0) { throw new Error("總金額必須是有效的正數。"); }
             } catch (error) { submissionStatusDiv.textContent = `錯誤：${error.message}`; submissionStatusDiv.className = 'error-message'; return; }
 
             const orderData = {
                 customerName: customerName, customerPhone: customerPhone, customerAddress: document.getElementById('customerAddress').value,
-                airport: airport, terminal: terminal, serviceType: serviceTypeVal, scheduledPickupTime: scheduledPickupTimeVal, 
-                carProductId: parseInt(carProductId), selectedAddons: selectedAddons, totalAmount: totalAmount
+                airport: airport, terminal: terminal, serviceType: serviceTypeVal, scheduledPickupTime: scheduledPickupTimeVal,
+                carProductId: parseInt(carProductId), selectedAddons: selectedAddons_payload, totalAmount: totalAmount
             };
-            submissionStatusDiv.textContent = '正在提交訂單...'; submissionStatusDiv.className = ''; 
+            submissionStatusDiv.textContent = '正在提交訂單...'; submissionStatusDiv.className = '';
             try {
-                const response = await fetch(`${API_BASE_URL}/api/orders/create`, { 
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) 
+                const response = await fetch(`${API_BASE_URL}/api/orders/create`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData)
                 });
-                if (response.ok) { 
-                    const result = await response.json(); 
+                if (response.ok) {
+                    const result = await response.json();
                     submissionStatusDiv.textContent = `訂單已成功新增！訂單 ID: ${result.orderId || '未知'}`;
-                    submissionStatusDiv.className = 'success-message'; 
+                    submissionStatusDiv.className = 'success-message';
                 } else {
-                    const errorResult = await response.json().catch(() => ({ message: response.statusText || "未知錯誤" })); 
+                    const errorResult = await response.json().catch(() => ({ message: response.statusText || "未知錯誤" }));
                     submissionStatusDiv.textContent = `訂單提交失敗: ${errorResult.message}`;
                     submissionStatusDiv.className = 'error-message';
                 }
@@ -460,57 +852,57 @@
             submissionStatusDiv = document.getElementById('submissionStatus');
 
             // 增加對 contentDisplay 的檢查，雖然理論上它應該在 DOMContentLoaded 之後總是存在
-            const localContentDisplay = document.getElementById('content-display'); 
+            const localContentDisplay = document.getElementById('content-display');
 
             if (!airportSelect || !terminalSelect || !carTypeSelect || !addonsContainer || !submissionStatusDiv) {
                 console.error("錯誤：新增訂單表單中的一個或多個必要元素未找到！");
                 // 在這裡的 contentDisplay 變數可能未定義，因為它是 DOMContentLoaded 裡的局部變數
                 // 所以我們使用 localContentDisplay
-                if(localContentDisplay) localContentDisplay.innerHTML += "<p class='error-message'>新增訂單表單初始化失敗，部分元件遺失。</p>";
+                if (localContentDisplay) localContentDisplay.innerHTML += "<p class='error-message'>新增訂單表單初始化失敗，部分元件遺失。</p>";
                 else console.error("content-display element not found for error message in initializeAddOrderForm");
                 return;
             }
-            populateAirports(); populateTerminals(airportSelect.value); 
+            populateAirports(); populateTerminals(airportSelect.value);
             populateCarTypes(); populateAddons();
             if (airportSelect) {
-                airportSelect.addEventListener('change', function() { populateTerminals(this.value); });
+                airportSelect.addEventListener('change', function () { populateTerminals(this.value); });
             } else { console.error("錯誤：在 initializeAddOrderForm 中 airportSelect 未找到，無法綁定 change 事件！"); }
             console.log("initializeAddOrderForm 函式執行完畢。");
         }
 
         // --- 查詢訂單相關函式 ---
         function formatDate(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份是 0-indexed
-    const day = String(date.getDate()).padStart(2, '0');
-    // ↓↓↓ 請將您的 return 語句修改成下面這一行 ↓↓↓
-    return `${year}-${month}-${day}`; 
-}
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份是 0-indexed
+            const day = String(date.getDate()).padStart(2, '0');
+            // ↓↓↓ 請將您的 return 語句修改成下面這一行 ↓↓↓
+            return `${year}-${month}-${day}`;
+        }
 
-        async function fetchOrders(params) { /* ... fetchOrders 完整定義 ... */ 
+        async function fetchOrders(params) { /* ... fetchOrders 完整定義 ... */
             const orderResultsBody = document.getElementById('orderResultsBody');
             const loadingMessage = document.getElementById('loadingMessage');
             const noResultsMessage = document.getElementById('noResultsMessage');
 
             if (!orderResultsBody || !loadingMessage || !noResultsMessage) {
                 console.error("顯示訂單所需的元素缺失。");
-                if(orderResultsBody) orderResultsBody.innerHTML = `<tr><td colspan="12" class="text-danger text-center">錯誤：頁面元件遺失。</td></tr>`;
+                if (orderResultsBody) orderResultsBody.innerHTML = `<tr><td colspan="12" class="text-danger text-center">錯誤：頁面元件遺失。</td></tr>`;
                 return;
             }
             orderResultsBody.innerHTML = ''; loadingMessage.style.display = 'block'; noResultsMessage.style.display = 'none';
             noResultsMessage.className = 'alert alert-info'; noResultsMessage.textContent = '找不到符合條件的訂單。';
             const queryParams = new URLSearchParams(params).toString();
             // console.log(`正在獲取訂單，參數: ${queryParams}`);
-                // --- ↓↓↓ 除錯：印出將要 fetch 的完整 URL ↓↓↓ ---
-    const fullUrl = `${API_BASE_URL}/api/1/view/orders?${queryParams}`; 
-    console.log("Fetching URL:", fullUrl); 
-    // --- ↑↑↑ 除錯結束 ↑↑↑ ---
+            // --- ↓↓↓ 除錯：印出將要 fetch 的完整 URL ↓↓↓ ---
+            const fullUrl = `${API_BASE_URL}/api/1/view/orders?${queryParams}`;
+            console.log("Fetching URL:", fullUrl);
+            // --- ↑↑↑ 除錯結束 ↑↑↑ ---
             try {
                 const response = await fetch(fullUrl);
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: `API請求失敗: ${response.status}`}));
+                    const errorData = await response.json().catch(() => ({ message: `API請求失敗: ${response.status}` }));
                     orderResultsBody.innerHTML = `<tr><td colspan="12" class="text-danger text-center">無法載入訂單：${errorData.message}</td></tr>`;
-                    return; 
+                    return;
                 }
                 const orders = await response.json(); displayOrders(orders);
             } catch (error) {
@@ -521,40 +913,108 @@
             } finally { loadingMessage.style.display = 'none'; }
         }
 
-        function displayOrders(orders) { /* ... displayOrders 完整定義 ... */
+        function displayOrders(orders) {
             const orderResultsBody = document.getElementById('orderResultsBody');
             const noResultsMessage = document.getElementById('noResultsMessage');
-            noResultsMessage.className = 'alert alert-info'; noResultsMessage.textContent = '找不到符合條件的訂單。';
-            if (!orderResultsBody) { console.error("displayOrders: orderResultsBody not found"); noResultsMessage.textContent = '錯誤：頁面元件遺失。'; noResultsMessage.className = 'alert alert-danger'; noResultsMessage.style.display = 'block'; return; }
-            orderResultsBody.innerHTML = '';
-            if (!orders || orders.length === 0) { noResultsMessage.style.display = 'block'; return; }
-            noResultsMessage.style.display = 'none';
+
+            // 設定預設的無結果訊息樣式和內容
+            noResultsMessage.className = 'alert alert-info text-center'; // 確保置中
+            noResultsMessage.textContent = '找不到符合條件的訂單。';
+
+            if (!orderResultsBody) {
+                console.error("displayOrders: orderResultsBody not found");
+                if (noResultsMessage) { // 如果 noResultsMessage 元素存在
+                    noResultsMessage.textContent = '錯誤：頁面表格元件遺失，無法顯示訂單。';
+                    noResultsMessage.className = 'alert alert-danger text-center';
+                    noResultsMessage.style.display = 'block';
+                }
+                return;
+            }
+
+            orderResultsBody.innerHTML = ''; // 清空現有內容
+
+            if (!orders || orders.length === 0) {
+                if (noResultsMessage) noResultsMessage.style.display = 'block';
+                // 如果沒有訂單，顯示一個提示訊息的行
+                const row = orderResultsBody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 13; // <<< 確保 colspan 與表頭欄位數一致
+                cell.textContent = '目前沒有符合條件的訂單。';
+                cell.className = 'text-center text-muted';
+                return;
+            }
+
+            if (noResultsMessage) noResultsMessage.style.display = 'none'; // 如果有訂單，隱藏無結果訊息
+
             orders.forEach(order => {
                 const row = orderResultsBody.insertRow();
-                row.insertCell().textContent = order.display_order_id || 'N/A';
+                row.insertCell().textContent = order.display_order_id || 'N/A'; // 您的 VIEW 中此欄位名為 display_order_id
                 row.insertCell().textContent = order.customer_name || 'N/A';
                 row.insertCell().textContent = order.customer_phone || 'N/A';
-                row.insertCell().textContent = order.display_address || 'N/A';
+                row.insertCell().textContent = order.display_address || 'N/A'; // 您的 VIEW 中此欄位名為 display_address
                 row.insertCell().textContent = order.service_type || 'N/A';
+
                 let formattedTime = 'N/A';
                 if (order.scheduled_pickup_time) {
-                    try { formattedTime = new Date(order.scheduled_pickup_time).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }); } 
-                    catch (e) { formattedTime = order.scheduled_pickup_time; }
+                    try {
+                        // 假設 scheduled_pickup_time 是 YYYY-MM-DD HH:MM:SS 格式
+                        const dateStr = order.scheduled_pickup_time.includes('T') ? order.scheduled_pickup_time : order.scheduled_pickup_time.replace(' ', 'T');
+                        const dateObj = new Date(dateStr);
+                        if (!isNaN(dateObj.getTime())) {
+                            formattedTime = dateObj.toLocaleString('zh-TW', {
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit', hour12: false
+                            });
+                        } else {
+                            formattedTime = order.scheduled_pickup_time; // 無法解析則顯示原始值
+                        }
+                    } catch (e) {
+                        console.warn("日期格式化錯誤 for scheduled_pickup_time in displayOrders:", order.scheduled_pickup_time, e);
+                        formattedTime = order.scheduled_pickup_time; // 出錯則顯示原始值
+                    }
                 }
                 row.insertCell().textContent = formattedTime;
+
                 row.insertCell().textContent = order.airport || 'N/A';
                 row.insertCell().textContent = order.terminal || 'N/A';
                 row.insertCell().textContent = order.car_model || 'N/A';
+
                 let formattedAmount = 'N/A';
-                if (order.display_amount != null) {
-                    try { formattedAmount = `$${Number(order.display_amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`; } 
-                    catch (e) { formattedAmount = order.display_amount; }
+                if (order.display_amount != null) { // 您的 VIEW 中此欄位名為 display_amount
+                    try {
+                        // 格式化為台幣，無小數
+                        formattedAmount = Number(order.display_amount).toLocaleString('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                    } catch (e) {
+                        formattedAmount = order.display_amount;
+                    }
                 }
                 row.insertCell().textContent = formattedAmount;
-                row.insertCell().textContent = order.order_status || 'N/A';
+
+                row.insertCell().textContent = order.order_status || 'N/A'; // 訂單狀態
+
+                // 新增司機指派狀態欄位
+                const driverStatusCell = row.insertCell();
+                driverStatusCell.textContent = order.driver_assignment_status || '未知'; // <<< 讀取新欄位
+                if (order.driver_assignment_status === '已指派') {
+                    driverStatusCell.classList.add('text-success', 'fw-bold');
+                } else if (order.driver_assignment_status === '未指派') {
+                    driverStatusCell.classList.add('text-danger');
+                }
+
+                // 新增：指派司機按鈕（緊隨司機狀態或在操作欄）
+                const assignButton = document.createElement('button');
+                assignButton.className = 'btn btn-sm btn-outline-primary ms-2'; // 使用 margin-left (ms-2) 稍微隔開
+                assignButton.textContent = '指派';
+                assignButton.title = '指派/更改司機';
+                assignButton.onclick = () => openAssignDriverModal(order.display_order_id, order.driver_id || null); // 假設 display_order_id 是數字 order_id，並傳入當前 driver_id
+                driverStatusCell.appendChild(assignButton); // 將按鈕加到司機狀態欄，或加到 actionsCell
+
                 const actionsCell = row.insertCell();
-                const viewButton = document.createElement('button'); viewButton.className = 'btn btn-sm btn-info me-1';
-                viewButton.textContent = '詳情'; viewButton.onclick = () => viewOrderDetails(order.display_order_id);
+                const viewButton = document.createElement('button');
+                viewButton.className = 'btn btn-sm btn-info me-1';
+                viewButton.textContent = '詳情';
+                // 確保 order.display_order_id 是傳遞給 viewOrderDetails 的正確 ID (通常是數字 order_id)
+                viewButton.onclick = () => viewOrderDetails(order.display_order_id);
                 actionsCell.appendChild(viewButton);
             });
         }
@@ -573,7 +1033,7 @@
             if (!todayTab || !tomorrowTab || !document.getElementById('custom-range-tab') || !searchCustomRangeBtn || !startDateInput || !endDateInput || !document.getElementById('today-orders-pane') || !document.getElementById('tomorrow-orders-pane') || !customRangeResultsPane) {
                 console.error("查詢訂單檢視的一個或多個元素缺失。");
                 const container = document.getElementById('orderResultsTableContainer');
-                if(container) container.innerHTML = "<p class='text-danger'>查詢訂單介面初始化失敗，缺少必要元件。</p>";
+                if (container) container.innerHTML = "<p class='text-danger'>查詢訂單介面初始化失敗，缺少必要元件。</p>";
                 return;
             }
             const today = new Date(); const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
@@ -582,17 +1042,17 @@
             const tomorrowStr = formatDate(tomorrow);
             console.log("Value of tomorrowStr immediately after formatDate:", tomorrowStr); // <--- 新增除錯
             startDateInput.value = todayStr; endDateInput.value = todayStr;
-            todayTab.addEventListener('click', function() { /* ... */ fetchOrders({ date: todayStr }); });
-            tomorrowTab.addEventListener('click', function() { /* ... */ fetchOrders({ date: tomorrowStr }); });
-            document.getElementById('custom-range-tab').addEventListener('click', function() { /* ... */ });
-            searchCustomRangeBtn.addEventListener('click', function() { /* ... */ fetchOrders({ startDate: startDateInput.value, endDate: endDateInput.value }); });
+            todayTab.addEventListener('click', function () { /* ... */ fetchOrders({ date: todayStr }); });
+            tomorrowTab.addEventListener('click', function () { /* ... */ fetchOrders({ date: tomorrowStr }); });
+            document.getElementById('custom-range-tab').addEventListener('click', function () { /* ... */ });
+            searchCustomRangeBtn.addEventListener('click', function () { /* ... */ fetchOrders({ startDate: startDateInput.value, endDate: endDateInput.value }); });
             if (todayTab.classList.contains('active')) { fetchOrders({ date: todayStr }); }
             console.log("查詢訂單檢視已初始化。");
         }
 
 
         // --- DOMContentLoaded ---
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const navLinks = document.querySelectorAll('#sidebar .nav-link');
             const contentDisplay = document.getElementById('content-display'); // contentDisplay 在這裡定義
             const pageTitles = {
@@ -601,15 +1061,15 @@
             };
 
             navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault(); 
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
                     navLinks.forEach(nav => nav.classList.remove('active'));
                     this.classList.add('active');
                     const targetId = this.getAttribute('href');
                     const title = pageTitles[targetId] || "頁面內容";
                     let currentContentHtml = '';
 
-                    switch(targetId) {
+                    switch (targetId) {
                         case '#dashboard':
                             currentContentHtml = `<h4>${title}</h4><p>這裡是店家儀表板的內容。</p><p>您可以顯示今日訂單概況、待處理事項、司機出勤狀態等資訊。</p>`;
                             contentDisplay.innerHTML = currentContentHtml;
@@ -634,7 +1094,7 @@
                             currentContentHtml = `<h4>${title}</h4><p>請選擇查詢條件：</p>` +
                                 `<ul class="nav nav-tabs mb-3" id="queryOrderTabs" role="tablist"><li class="nav-item" role="presentation"><button class="nav-link active" id="today-orders-tab" data-bs-toggle="tab" data-bs-target="#today-orders-pane" type="button" role="tab" aria-controls="today-orders-pane" aria-selected="true">今日訂單</button></li><li class="nav-item" role="presentation"><button class="nav-link" id="tomorrow-orders-tab" data-bs-toggle="tab" data-bs-target="#tomorrow-orders-pane" type="button" role="tab" aria-controls="tomorrow-orders-pane" aria-selected="false">明日訂單</button></li><li class="nav-item" role="presentation"><button class="nav-link" id="custom-range-tab" data-bs-toggle="tab" data-bs-target="#custom-range-pane" type="button" role="tab" aria-controls="custom-range-pane" aria-selected="false">自訂日期區間</button></li></ul>` +
                                 `<div class="tab-content" id="queryOrderTabContent"><div class="tab-pane fade show active" id="today-orders-pane" role="tabpanel" aria-labelledby="today-orders-tab" tabindex="0"></div><div class="tab-pane fade" id="tomorrow-orders-pane" role="tabpanel" aria-labelledby="tomorrow-orders-tab" tabindex="0"></div><div class="tab-pane fade" id="custom-range-pane" role="tabpanel" aria-labelledby="custom-range-tab" tabindex="0"><div class="row g-3 align-items-center mb-3"><div class="col-auto"><label for="startDate" class="col-form-label">開始日期:</label></div><div class="col-auto"><input type="date" id="startDate" class="form-control"></div><div class="col-auto"><label for="endDate" class="col-form-label">結束日期:</label></div><div class="col-auto"><input type="date" id="endDate" class="form-control"></div><div class="col-auto"><button class="btn btn-primary" id="searchCustomRange">查詢</button></div></div><div id="customRangeResults"><p>請選擇日期並點擊查詢。</p></div></div></div>` +
-                                `<div class="mt-3"><h5>查詢結果:</h5><div id="orderResultsTableContainer"><table class="table table-striped table-hover"><thead><tr><th>訂單ID</th><th>顧客姓名</th><th>電話</th><th>地址</th><th>服務</th><th>預定時間</th><th>機場</th><th>航廈</th><th>車型</th><th>金額</th><th>狀態</th><th>操作</th></tr></thead><tbody id="orderResultsBody"><tr><td colspan="12" class="text-center">請先選擇查詢條件以載入訂單。</td></tr></tbody></table><div id="loadingMessage" class="text-center" style="display: none;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p>載入中...</p></div><div id="noResultsMessage" class="alert alert-info" style="display: none;">找不到符合條件的訂單。</div></div></div>`;
+                                `<div class="mt-3"><h5>查詢結果:</h5><div id="orderResultsTableContainer" class="table-responsive"><table class="table table-striped table-hover table-sm"><thead><tr><th>訂單ID</th><th>顧客姓名</th><th>電話</th><th>地址</th><th>服務</th><th>預定時間</th><th>機場</th><th>航廈</th><th>車型</th><th>金額</th><th>訂單狀態</th><th>司機狀態</th><th>操作</th></tr></thead><tbody id="orderResultsBody"><tr><td colspan="13" class="text-center">請先選擇查詢條件以載入訂單。</td></tr></tbody></table><div id="loadingMessage" class="text-center" style="display: none;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p>載入中...</p></div><div id="noResultsMessage" class="alert alert-info" style="display: none;">找不到符合條件的訂單。</div></div></div>`;
                             contentDisplay.innerHTML = currentContentHtml;
                             initializeQueryOrderView();
                             break;
@@ -645,7 +1105,7 @@
                         case '#queryDriver':
                             currentContentHtml = `<h4>${title}</h4><p>所有司機列表：</p><div id="driverTableContainer" class="table-responsive"><table class="table table-striped table-hover"><thead><tr><th>司機ID</th><th>司機名字</th><th>電話</th><th>車牌號碼</th><th>車輛廠牌</th><th>備註</th><th>操作</th></tr></thead><tbody id="driverResultsBody"><tr><td colspan="7" class="text-center">正在載入司機資料...</td></tr></tbody></table><div id="driverLoadingMessage" class="text-center" style="display: none;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p>載入中...</p></div><div id="noDriverResultsMessage" class="alert alert-info" style="display: none;">目前沒有司機資料。</div></div></div>`;
                             contentDisplay.innerHTML = currentContentHtml;
-                            initializeQueryDriverView(); 
+                            initializeQueryDriverView();
                             break;
                         default:
                             currentContentHtml = `<h4>頁面載入錯誤</h4><p>找不到對應的內容。</p>`;
@@ -660,4 +1120,5 @@
         });
     </script>
 </body>
+
 </html>
