@@ -530,125 +530,419 @@
             }
         }
 
-        function renderOrderDetails(data) {
+        async function renderOrderDetails(data) {
             const contentDisplay = document.getElementById('content-display');
 
-            // 處理加購項目列表 (來自逗號分隔的字串)
-            let addonsDisplayHtml = '<span class="text-muted">無</span>'; // 預設為 "無"
-            if (data.addon_items_list && data.addon_items_list.trim() !== "" && data.addon_items_list.toLowerCase() !== "null") {
-                const addonsArray = data.addon_items_list.split(',').map(item => item.trim()).filter(item => item !== ""); // 過濾掉空字串
-                if (addonsArray.length > 0) {
-                    addonsDisplayHtml = '<ul class="list-unstyled mb-0">';
-                    addonsArray.forEach(addon => {
-                        addonsDisplayHtml += `<li>- ${escapeHtml(addon)}</li>`;
-                    });
-                    addonsDisplayHtml += '</ul>';
-                }
-            }
-
-            // 處理司機資訊
-            let driverInfoHtml = '';
-            if (data.driver_name && data.driver_name !== '未指派') {
-                driverInfoHtml = `
-            <p class="mb-1"><strong>司機姓名：</strong> ${escapeHtml(data.driver_name)}</p>
-            <p class="mb-1"><strong>司機電話：</strong> ${escapeHtml(data.driver_phone || 'N/A')}</p>
-            <p class="mb-1"><strong>車牌號碼：</strong> ${escapeHtml(data.driver_license_plate || 'N/A')}</p>
-            <p class="mb-0"><strong>車輛廠牌：</strong> ${escapeHtml(data.driver_vehicle_brand || 'N/A')}</p>
-        `;
-            } else {
-                driverInfoHtml = `<p class="mb-0"><strong>司機：</strong> <span class="text-muted">未指派</span></p>`;
-            }
-
-            // 格式化總金額
-            const formattedTotalAmount = data.total_amount != null
-                ? Number(data.total_amount).toLocaleString('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
-                : '<span class="text-muted">N/A</span>';
-
-            // 格式化預定時間
-            let formattedScheduledTime = '<span class="text-muted">N/A</span>';
+            // 將後端傳來的時間格式 (YYYY-MM-DD HH:MM:SS) 轉換為 datetime-local 需要的格式 (YYYY-MM-DDTHH:MM)
+            let scheduledTimeForInput = '';
             if (data.scheduled_pickup_time && data.scheduled_pickup_time !== 'N/A') {
                 try {
-                    // 後端應回傳標準格式如 YYYY-MM-DD HH:MM:SS
-                    // JavaScript Date constructor 可以處理 YYYY-MM-DDTHH:MM:SS
-                    const dateStr = data.scheduled_pickup_time.includes('T') ? data.scheduled_pickup_time : data.scheduled_pickup_time.replace(' ', 'T');
-                    const dateObj = new Date(dateStr);
-                    if (!isNaN(dateObj.getTime())) { // 檢查是否為有效日期
-                        formattedScheduledTime = dateObj.toLocaleString('zh-TW', {
-                            year: 'numeric', month: '2-digit', day: '2-digit',
-                            hour: '2-digit', minute: '2-digit', hour12: false
-                        }).replace(/\//g, '-'); // 將 / 替換為 -
+                    const dateStr = data.scheduled_pickup_time.includes('T')
+                        ? data.scheduled_pickup_time.substring(0, 16) // 如果是 YYYY-MM-DDTHH:MM:SSZ 或類似格式
+                        : data.scheduled_pickup_time.replace(' ', 'T').substring(0, 16); // 將 YYYY-MM-DD HH:MM:SS -> YYYY-MM-DDTHH:MM
+                    // 驗證一下格式是否大致正確 (YYYY-MM-DDTHH:MM)
+                    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateStr)) {
+                        scheduledTimeForInput = dateStr;
                     } else {
-                        formattedScheduledTime = escapeHtml(data.scheduled_pickup_time);
+                        console.warn("scheduled_pickup_time 格式不符 datetime-local:", data.scheduled_pickup_time);
+                        // 嘗試從 Date 物件轉換，如果原始格式是標準的
+                        const d = new Date(data.scheduled_pickup_time.replace(' ', 'T'));
+                        if (!isNaN(d.getTime())) {
+                            const year = d.getFullYear();
+                            const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                            const day = d.getDate().toString().padStart(2, '0');
+                            const hours = d.getHours().toString().padStart(2, '0');
+                            const minutes = d.getMinutes().toString().padStart(2, '0');
+                            scheduledTimeForInput = `${year}-${month}-${day}T${hours}:${minutes}`;
+                        }
                     }
                 } catch (e) {
-                    console.warn("日期格式化錯誤 for scheduled_pickup_time:", data.scheduled_pickup_time, e);
-                    formattedScheduledTime = escapeHtml(data.scheduled_pickup_time);
+                    console.error("格式化 scheduled_pickup_time 錯誤:", e);
                 }
             }
 
+            // 為了下拉選單，我們需要非同步獲取車型和加購項目列表
+            // 這裡先定義 HTML 結構，稍後用 JavaScript 填充下拉選單並選中
+
             const detailsHtml = `
-        <div id="orderDetailsView" class="content-section">
+        <div id="orderDetailsEditView" class="content-section">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0">訂單詳細資料 - #${escapeHtml(String(data.order_id))}</h4>
-                <button class="btn btn-sm btn-outline-secondary" onclick="goBackToQueryOrder()">返回查詢列表</button>
+                <h4 class="mb-0">修改訂單資料 - #${escapeHtml(String(data.order_id))}</h4>
+                <div>
+                    <button class="btn btn-success me-2" onclick="saveOrderChanges(${data.order_id}, ${data.customer_id})">儲存修改</button>
+                    <button class="btn btn-outline-secondary" onclick="goBackToQueryOrder()">取消返回</button>
+                </div>
             </div>
             <hr class="mt-0">
-            <div class="row mb-3">
-                <div class="col-md-6 mb-3 mb-md-0">
-                    <div class="card">
-                        <div class="card-header"><h5>顧客資訊</h5></div>
-                        <div class="card-body">
-                            <p class="mb-1"><strong>姓名：</strong> ${escapeHtml(data.customer_name)}</p>
-                            <p class="mb-1"><strong>電話：</strong> ${escapeHtml(data.customer_phone)}</p>
-                            <p class="mb-0"><strong>地址：</strong> ${escapeHtml(data.address)}</p>
+            <form id="editOrderForm">
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="card">
+                            <div class="card-header"><h5>顧客資訊 (手動修改)</h5></div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label for="editCustomerName" class="form-label-sm">姓名：</label>
+                                    <input type="text" class="form-control form-control-sm" id="editCustomerName" value="${escapeHtml(data.customer_name || '')}">
+                                </div>
+                                <div class="mb-2">
+                                    <label for="editCustomerPhone" class="form-label-sm">電話：</label>
+                                    <input type="text" class="form-control form-control-sm" id="editCustomerPhone" value="${escapeHtml(data.customer_phone || '')}">
+                                </div>
+                                <div class="mb-0">
+                                    <label for="editCustomerAddress" class="form-label-sm">地址：</label>
+                                    <input type="text" class="form-control form-control-sm" id="editCustomerAddress" value="${escapeHtml(data.address || '')}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header"><h5>服務資訊 (下拉式修改)</h5></div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label for="editServiceType" class="form-label-sm">服務類型：</label>
+                                    <select class="form-select form-select-sm" id="editServiceType">
+                                        <option value="接機" ${data.service_type === '接機' ? 'selected' : ''}>接機</option>
+                                        <option value="送機" ${data.service_type === '送機' ? 'selected' : ''}>送機</option>
+                                        <option value="其他" ${data.service_type !== '接機' && data.service_type !== '送機' && data.service_type ? 'selected' : ''}>${escapeHtml(data.service_type)}</option> 
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="editScheduledTime" class="form-label-sm">預定時間：</label>
+                                    <input type="datetime-local" class="form-control form-control-sm" id="editScheduledTime" value="${scheduledTimeForInput}">
+                                </div>
+                                <div class="mb-2">
+                                    <label for="editAirport" class="form-label-sm">機場：</label>
+                                    <select class="form-select form-select-sm" id="editAirport"></select>
+                                </div>
+                                <div class="mb-0">
+                                    <label for="editTerminal" class="form-label-sm">航廈：</label>
+                                    <select class="form-select form-select-sm" id="editTerminal">
+                                        <option value="">請先選擇機場</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header"><h5>服務資訊</h5></div>
-                        <div class="card-body">
-                            <p class="mb-1"><strong>服務類型：</strong> ${escapeHtml(data.service_type)}</p>
-                            <p class="mb-1"><strong>預定時間：</strong> ${formattedScheduledTime}</p>
-                            <p class="mb-1"><strong>機場：</strong> ${escapeHtml(data.airport)}</p>
-                            <p class="mb-0"><strong>航廈：</strong> ${escapeHtml(data.terminal)}</p>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                         <div class="card">
+                            <div class="card-header"><h5>車輛與項目 (下拉式修改/勾選)</h5></div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label for="editCarModel" class="form-label-sm">車型：</label>
+                                    <select class="form-select form-select-sm" id="editCarModel">
+                                        <option value="">載入中...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label-sm">加購項目：</label>
+                                    <div id="editAddonsContainer" class="border p-2 rounded" style="max-height: 150px; overflow-y: auto;">
+                                        <small class="text-muted">載入中...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header"><h5>金額 (手動修改) 與狀態 (不可改)</h5></div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label for="editTotalAmount" class="form-label-sm">總金額：</label>
+                                    <input type="number" class="form-control form-control-sm" id="editTotalAmount" value="${data.total_amount || 0}" step="1">
+                                </div>
+                                <p class="mb-0"><strong>訂單狀態：</strong> ${escapeHtml(data.order_status)}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-md-6 mb-3 mb-md-0">
-                     <div class="card">
-                        <div class="card-header"><h5>車輛與項目</h5></div>
-                        <div class="card-body">
-                            <p class="mb-1"><strong>車型：</strong> ${escapeHtml(data.car_model || '<span class="text-muted">未指定</span>')}</p>
-                            <div><strong>加購項目：</strong>${addonsDisplayHtml}</div>
-                        </div>
+                
+                <div class="card">
+                    <div class="card-header"><h5>司機資訊 (不可改)</h5></div>
+                    <div class="card-body">
+                        ${data.driver_name && data.driver_name !== '未指派' ? `
+                            <p class="mb-1"><strong>司機姓名：</strong> ${escapeHtml(data.driver_name)}</p>
+                            <p class="mb-1"><strong>司機電話：</strong> ${escapeHtml(data.driver_phone || 'N/A')}</p>
+                            <p class="mb-1"><strong>車牌號碼：</strong> ${escapeHtml(data.driver_license_plate || 'N/A')}</p>
+                            <p class="mb-0"><strong>車輛廠牌：</strong> ${escapeHtml(data.driver_vehicle_brand || 'N/A')}</p>
+                        ` : `<p class="mb-0"><strong>司機：</strong> <span class="text-muted">未指派</span></p>`
+                }
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header"><h5>金額與狀態</h5></div>
-                        <div class="card-body">
-                            <p class="mb-1"><strong>總金額：</strong> ${formattedTotalAmount}</p>
-                            <p class="mb-0"><strong>訂單狀態：</strong> ${escapeHtml(data.order_status)}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header"><h5>司機資訊</h5></div>
-                <div class="card-body">
-                    ${driverInfoHtml}
-                </div>
-            </div>
+                <div id="updateOrderStatus" class="mt-3"></div>
+            </form>
         </div>
     `;
             contentDisplay.innerHTML = detailsHtml;
+
+            // HTML 結構插入後，開始填充下拉選單並預選
+            // **注意**: data.airport 和 data.terminal 是名稱，我們需要將它們與 populateAirports/Terminals 中的 value 匹配
+            // **注意**: data.car_product_id_selected 和 data.addon_product_ids_selected 是 ID，用於預選
+
+            // 填充機場和航廈 (類似 initializeAddOrderForm 中的邏輯)
+            const editAirportSelect = document.getElementById('editAirport');
+            const editTerminalSelect = document.getElementById('editTerminal');
+
+            // 填充機場
+            if (editAirportSelect) {
+                editAirportSelect.innerHTML = '<option value="">請選擇機場...</option>';
+                API_AIRPORTS.forEach(airport => { // API_AIRPORTS 是您之前定義的全域變數
+                    const option = document.createElement('option');
+                    option.value = airport.name; // 使用機場名稱作為 value，以便和 data.airport 匹配預選
+                    option.textContent = airport.name;
+                    if (data.airport === airport.name) {
+                        option.selected = true;
+                    }
+                    editAirportSelect.appendChild(option);
+                });
+                // 機場選擇後觸發填充航廈
+                editAirportSelect.addEventListener('change', function () {
+                    populateEditTerminals(this.value, editTerminalSelect, null); // 傳入 null 作為預選航廈
+                });
+                // 初始載入時，如果機場已選，則填充航廈並預選
+                if (data.airport) {
+                    populateEditTerminals(data.airport, editTerminalSelect, data.terminal);
+                }
+            }
+
+            // 填充車型下拉選單
+            const editCarModelSelect = document.getElementById('editCarModel');
+            if (editCarModelSelect) {
+                populateEditCarTypes(editCarModelSelect, data.car_product_id_selected);
+            }
+
+            // 填充加購項目核取方塊
+            const editAddonsContainer = document.getElementById('editAddonsContainer');
+            if (editAddonsContainer) {
+                populateEditAddons(editAddonsContainer, data.addon_product_ids_selected || []); // 確保是陣列
+            }
         }
 
+        // 輔助函式：填充修改用的航廈下拉選單
+        function populateEditTerminals(selectedAirportName, terminalSelectElement, selectedTerminalNameValue) { // 參數改回 NameValue
+            if (!terminalSelectElement) {
+                console.error("populateEditTerminals: terminalSelectElement is null");
+                return;
+            }
+            terminalSelectElement.innerHTML = '<option value="">請選擇航廈...</option>';
+            let terminalsToShow = [];
+
+            const airportData = API_AIRPORTS.find(a => a.name === selectedAirportName);
+
+            if (airportData && API_TERMINALS[airportData.id]) {
+                terminalsToShow = API_TERMINALS[airportData.id];
+            } else if (selectedAirportName) {
+                terminalSelectElement.innerHTML = '<option value="">該機場無可用航廈資料</option>';
+            } else {
+                terminalSelectElement.innerHTML = '<option value="">請先選擇機場</option>';
+            }
+
+            terminalsToShow.forEach(terminal => {
+                const option = document.createElement('option');
+                option.value = terminal.name; // <<< 修改：option 的 value 使用 terminal.name (例如 "第一航廈")
+                option.textContent = terminal.name; // option 顯示的文字是 terminal.name
+
+                // 進行預選比較時，直接比較名稱
+                if (selectedTerminalNameValue !== null && selectedTerminalNameValue !== undefined &&
+                    selectedTerminalNameValue === terminal.name) { // <<< 修改：直接比較名稱字串
+                    option.selected = true;
+                }
+                terminalSelectElement.appendChild(option);
+            });
+        }
+
+        // 輔助函式：填充修改用的車型下拉選單
+        async function populateEditCarTypes(selectElement, selectedCarProductId) {
+            selectElement.innerHTML = '<option value="">載入中...</option>';
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/1/products/cars`);
+                if (!response.ok) throw new Error('無法載入車型');
+                const carTypes = await response.json();
+                selectElement.innerHTML = '<option value="">請選擇車型...</option>';
+                carTypes.forEach(car => {
+                    const option = document.createElement('option');
+                    option.value = car.product_id; // value 是 ID
+                    option.textContent = car.Product_name;
+                    if (selectedCarProductId && parseInt(car.product_id) === parseInt(selectedCarProductId)) {
+                        option.selected = true;
+                    }
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error(error);
+                selectElement.innerHTML = `<option value="">${error.message}</option>`;
+            }
+        }
+
+        // 輔助函式：填充修改用的加購項目核取方塊
+        async function populateEditAddons(containerElement, selectedAddonProductIds) {
+            containerElement.innerHTML = '<small class="text-muted">載入中...</small>';
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/1/products/addons`);
+                if (!response.ok) throw new Error('無法載入加購項目');
+                const addonData = await response.json();
+                containerElement.innerHTML = ''; // 清空載入中訊息
+                if (Array.isArray(addonData) && addonData.length > 0) {
+                    addonData.forEach(addon => {
+                        const div = document.createElement('div');
+                        div.className = 'form-check form-check-sm';
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'form-check-input';
+                        checkbox.value = addon.product_id; // value 是 ID
+                        checkbox.id = 'edit-addon-' + addon.product_id;
+                        if (selectedAddonProductIds.includes(parseInt(addon.product_id))) {
+                            checkbox.checked = true;
+                        }
+                        const label = document.createElement('label');
+                        label.className = 'form-check-label';
+                        label.htmlFor = 'edit-addon-' + addon.product_id;
+                        label.textContent = addon.Product_name;
+
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+                        containerElement.appendChild(div);
+                    });
+                } else {
+                    containerElement.innerHTML = '<small class="text-muted">目前無加購項目。</small>';
+                }
+            } catch (error) {
+                console.error(error);
+                containerElement.innerHTML = `<small class="text-danger">${error.message}</small>`;
+            }
+        }
+
+
+        // 新增：儲存訂單修改的函式
+        async function saveOrderChanges(orderId, customerId) {
+            const updateStatusDiv = document.getElementById('updateOrderStatus');
+            if (updateStatusDiv) {
+                updateStatusDiv.innerHTML = '<div class="alert alert-info py-2">正在儲存修改...</div>';
+            }
+
+            // 1. 收集所有表單數據
+            const customerName = document.getElementById('editCustomerName').value.trim();
+            const customerPhone = document.getElementById('editCustomerPhone').value.trim();
+            const customerAddress = document.getElementById('editCustomerAddress').value.trim(); // 這是 pickup_address
+            const serviceType = document.getElementById('editServiceType').value;
+            let scheduledPickupTime = document.getElementById('editScheduledTime').value; // 格式 YYYY-MM-DDTHH:MM
+            const airport = document.getElementById('editAirport').value; // 機場名稱
+            const terminal = document.getElementById('editTerminal').value; // 航廈名稱
+            const carProductIdStr = document.getElementById('editCarModel').value;
+            const totalAmountStr = document.getElementById('editTotalAmount').value;
+
+            // 2. 收集選中的加購項目 ID 並組合成 "&" 分隔的字串
+            const addonIdArray = [];
+            const selectedAddonsCheckboxes = document.querySelectorAll('#editAddonsContainer input[type="checkbox"]:checked');
+            selectedAddonsCheckboxes.forEach(checkbox => {
+                addonIdArray.push(checkbox.value); // checkbox 的 value 應該是 product_id
+            });
+            const addonProductIdsString = addonIdArray.join('&'); // 例如 "202&203" 或 ""
+
+            // 3. 前端基本驗證 (您可以根據需要做得更詳細)
+            if (!customerName || !customerPhone || !customerAddress || !scheduledPickupTime || !carProductIdStr || !totalAmountStr) {
+                const errorMsg = "錯誤：顧客姓名、電話、地址、預定時間、車型和總金額為必填項！";
+                if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${errorMsg}</div>`;
+                alert(errorMsg);
+                return;
+            }
+
+            let carProductId;
+            try {
+                carProductId = parseInt(carProductIdStr);
+                if (isNaN(carProductId) || carProductId <= 0) throw new Error();
+            } catch (e) {
+                const errorMsg = "錯誤：車型選擇無效。";
+                if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${errorMsg}</div>`;
+                alert(errorMsg);
+                return;
+            }
+
+            let totalAmount;
+            try {
+                totalAmount = parseFloat(totalAmountStr);
+                if (isNaN(totalAmount) || totalAmount < 0) throw new Error(); // 金額可以為0，但不應為負
+            } catch (e) {
+                const errorMsg = "錯誤：總金額格式無效。";
+                if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${errorMsg}</div>`;
+                alert(errorMsg);
+                return;
+            }
+
+            // 確保 scheduled_pickup_time 格式為 YYYY-MM-DDTHH:MM:SS (如果後端嚴格要求)
+            // datetime-local input 的 value (payload.scheduled_pickup_time) 通常是 "YYYY-MM-DDTHH:MM"
+            if (scheduledPickupTime && scheduledPickupTime.length === 16) { // YYYY-MM-DDTHH:MM
+                scheduledPickupTime += ":00"; // 補上秒，變成 YYYY-MM-DDTHH:MM:SS
+            }
+
+
+            // 4. 建立 JSON payload
+            // 欄位名稱需與後端 UpdateOrderHandler 解析時使用的 key 一致
+            // (如果後端用 DBConnect02.parseJson，它會移除引號，所以大小寫和底線風格要一致)
+            const payload = {
+                order_id: orderId,
+                customer_id: customerId,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                customer_address: customerAddress,
+                service_type: serviceType,
+                scheduled_pickup_time: scheduledPickupTime,
+                airport: airport,
+                terminal: terminal,
+                car_product_id: carProductId,
+                total_amount: totalAmount,
+                addon_product_ids: addonProductIdsString // <<< 現在是 & 分隔的字串
+            };
+
+            console.log("準備更新訂單，Payload:", JSON.stringify(payload)); // 印出準備發送的 JSON 字串
+
+            // 5. 呼叫後端更新 API
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/order/update`, {
+                    method: 'PUT', // 或 'POST'，與您後端 UpdateOrderHandler 的設定一致
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                // 嘗試解析 JSON 回應，即使回應不是 2xx 也可能包含錯誤訊息
+                let result;
+                const responseText = await response.text(); // 先獲取文字，避免 response.json() 對空回應或非JSON回應拋錯
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    // 如果回應不是有效的 JSON，將整個 text 作為錯誤訊息的一部分
+                    console.error("API 回應不是有效的 JSON:", responseText);
+                    if (!response.ok) { // 如果 HTTP 狀態碼表示錯誤
+                        throw new Error(`伺服器錯誤 ${response.status}: ${responseText || response.statusText}`);
+                    }
+                    // 如果 HTTP 狀態OK但JSON解析失敗，這比較奇怪，但仍報錯
+                    result = { error: "無法解析伺服器回應，但請求可能已成功。回應內容: " + responseText };
+                }
+
+
+                if (response.ok) {
+                    const successMsg = result.message || '訂單修改成功！';
+                    if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-success py-2">${escapeHtml(successMsg)}</div>`;
+                    alert(escapeHtml(successMsg));
+                    // 修改成功後，通常會返回列表頁或重新載入唯讀的詳情頁
+                    // 這裡我們直接呼叫返回查詢列表的函式
+                    goBackToQueryOrder();
+                } else {
+                    // 如果 result.error 存在，使用它，否則使用 response.statusText
+                    throw new Error(result.error || `更新失敗: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error("更新訂單 API 請求失敗:", error);
+                const errorMsg = `更新錯誤: ${error.message}`;
+                if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${escapeHtml(errorMsg)}</div>`;
+                alert(escapeHtml(errorMsg));
+            }
+        }
         // 3. **新增** goBackToQueryOrder 函式
         function goBackToQueryOrder() {
             // 模擬點擊「查詢訂單」導覽連結以重新載入該視圖
@@ -740,7 +1034,7 @@
             }
             terminalsToShow.forEach(terminal => {
                 const option = document.createElement('option');
-                option.value = terminal.id;
+                option.value = terminal.name;
                 option.textContent = terminal.name;
                 terminalSelect.appendChild(option);
             });
@@ -798,6 +1092,7 @@
             addonCheckboxes.forEach(checkbox => {
                 addonIdArray.push(checkbox.value); // 收集所有選中的 productId (字串形式)
             });
+            const concatenated_ids_string = addonIdArray.join('&'); // 直接得到 "4&5&6&7" 或空字串 ""
             let selectedAddons_payload = []; // 如果沒有加購項目，就是空陣列
             if (addonIdArray.length > 0) {
                 let concatenated_ids_string = addonIdArray.join('&'); // 用 '&' 串接所有 ID
@@ -819,9 +1114,16 @@
             } catch (error) { submissionStatusDiv.textContent = `錯誤：${error.message}`; submissionStatusDiv.className = 'error-message'; return; }
 
             const orderData = {
-                customerName: customerName, customerPhone: customerPhone, customerAddress: document.getElementById('customerAddress').value,
-                airport: airport, terminal: terminal, serviceType: serviceTypeVal, scheduledPickupTime: scheduledPickupTimeVal,
-                carProductId: parseInt(carProductId), selectedAddons: selectedAddons_payload, totalAmount: totalAmount
+                customerName: customerName, // 確保這些 key 與後端 CreateOrderHandler 中 params.get("key") 的 key 一致
+                customerPhone: customerPhone,
+                customerAddress: document.getElementById('customerAddress').value,
+                airport: document.getElementById('airport').value,
+                terminal: document.getElementById('terminal').value, // 現在是航廈名稱
+                serviceType: document.getElementById('serviceType').value,
+                scheduledPickupTime: document.getElementById('scheduledPickupTime').value,
+                carProductId: parseInt(carProductId), // carProductId 也是字串，後端會 parseInt
+                addon_product_ids: concatenated_ids_string, // <<< 修改於此：直接使用字串，欄位名也修改
+                totalAmount: totalAmount // totalAmount 也是字串，後端會 parseDouble
             };
             submissionStatusDiv.textContent = '正在提交訂單...'; submissionStatusDiv.className = '';
             try {
