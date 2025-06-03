@@ -461,16 +461,26 @@
 
             if (!driverResultsBody) {
                 console.error("displayDrivers: driverResultsBody not found");
+                if (noResultsMessage) {
+                    noResultsMessage.textContent = '錯誤：頁面表格元件遺失，無法顯示司機資料。';
+                    noResultsMessage.className = 'alert alert-danger text-center';
+                    noResultsMessage.style.display = 'block';
+                }
                 return;
             }
 
             driverResultsBody.innerHTML = '';
 
             if (!drivers || drivers.length === 0) {
-                noResultsMessage.style.display = 'block';
+                if (noResultsMessage) noResultsMessage.style.display = 'block';
+                const row = driverResultsBody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 7; // <<< colspan 保持為 7 (ID, 名字, 電話, 車牌, 廠牌, 備註, 操作)
+                cell.textContent = '目前沒有活動中的司機資料。'; // 修改提示訊息
+                cell.className = 'text-center text-muted';
                 return;
             }
-            noResultsMessage.style.display = 'none';
+            if (noResultsMessage) noResultsMessage.style.display = 'none';
 
             drivers.forEach(driver => {
                 const row = driverResultsBody.insertRow();
@@ -481,17 +491,214 @@
                 row.insertCell().textContent = driver.vehicle_brand || 'N/A';
                 row.insertCell().textContent = driver.notes || '';
 
+                // 操作按鈕
                 const actionsCell = row.insertCell();
-                const editButton = document.createElement('button');
-                editButton.className = 'btn btn-sm btn-warning me-1';
-                editButton.textContent = '編輯';
-                editButton.onclick = () => editDriver(driver.driver_id);
-                actionsCell.appendChild(editButton);
+                actionsCell.classList.add('text-nowrap');
+
+                // 修改資料按鈕
+                const modifyButton = document.createElement('button');
+                modifyButton.className = 'btn btn-sm btn-warning me-1';
+                modifyButton.innerHTML = '<i class="bi bi-pencil-square"></i> 修改';
+                modifyButton.title = '修改司機資料';
+                // 假設 driver 物件中沒有 driver_status 了，或者即使有也是 0
+                modifyButton.onclick = () => openEditDriverView(driver.driver_id, driver);
+                actionsCell.appendChild(modifyButton);
+
+                // 刪除 (軟刪除) 按鈕
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'btn btn-sm btn-danger';
+                deleteButton.innerHTML = '<i class="bi bi-trash"></i> 刪除';
+                deleteButton.title = '刪除此司機 (設為不活動)';
+                // 因為列表只顯示活動司機，所以這個按鈕總是 "刪除"
+                deleteButton.onclick = () => confirmSoftDeleteDriver(driver.driver_id, driver.name);
+                actionsCell.appendChild(deleteButton);
             });
         }
 
-        function editDriver(driverId) {
-            alert(`編輯司機 ID: ${driverId} (此功能待實現)`);
+        function confirmSoftDeleteDriver(driverId, driverName) {
+            if (confirm(`您確定要刪除 (停用) 司機 "${escapeHtml(driverName)}" (ID: ${driverId}) 嗎？\n此操作會將司機狀態設為不活動 (-1)。`)) {
+                softDeleteDriver(driverId, -1); // 傳遞 -1 作為新的狀態
+            }
+        }
+
+        async function softDeleteDriver(driverId, newStatus) { // newStatus 可以是 -1 (停用) 或 0 (啟用)
+            const actionText = (newStatus === -1) ? "停用" : "啟用";
+            // 可選：在按鈕旁顯示小小的 loading 狀態
+            // alert(`正在 ${actionText} 司機 ID: ${driverId}...`);
+
+            const payload = {
+                driver_id: driverId,
+                status: newStatus
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/driver/update-status`, {
+                    method: 'PUT', // 與後端 UpdateDriverStatusHandler 的設定一致
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await response.json(); // 嘗試解析 JSON 回應
+
+                if (response.ok) {
+                    alert(result.message || `司機已成功 ${actionText}！`);
+                    fetchDrivers(); // 重新載入司機列表以更新顯示 (因為我們現在只顯示活動司機)
+                } else {
+                    throw new Error(result.error || `${actionText} 司機失敗: ${response.status}`);
+                }
+            } catch (err) {
+                console.error(`${actionText} 司機時發生錯誤:`, err);
+                alert(`${actionText} 司機時發生錯誤: ${err.message}`);
+            }
+        }
+
+        async function saveDriverChanges(driverId) { // driverId 可以從按鈕點擊時傳入
+            const updateStatusDiv = document.getElementById('driverUpdateStatusDiv'); // 假設有這個 div 顯示訊息
+            if (updateStatusDiv) {
+                updateStatusDiv.innerHTML = '<div class="alert alert-info py-2">正在儲存司機資料...</div>';
+            }
+
+            // 1. 從表單收集更新後的資料
+            const name = document.getElementById('editDriverNameInput').value.trim();
+            const phone = document.getElementById('editDriverPhoneInput').value.trim();
+            const licensePlate = document.getElementById('editDriverLicensePlateInput').value.trim();
+            const vehicleBrand = document.getElementById('editDriverVehicleBrandInput').value.trim();
+            const notes = document.getElementById('editDriverNotesInput').value.trim();
+
+            // 2. 前端基本驗證
+            if (!name || !phone) {
+                const errorMsg = "錯誤：司機姓名和電話為必填欄位！";
+                if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${escapeHtml(errorMsg)}</div>`;
+                alert(errorMsg);
+                return;
+            }
+            if (driverId === null || driverId === undefined || isNaN(parseInt(driverId))) {
+                const errorMsg = "錯誤：無效的司機 ID。";
+                if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${escapeHtml(errorMsg)}</div>`;
+                alert(errorMsg);
+                return;
+            }
+
+
+            // 3. 建立 JSON payload
+            // 欄位名稱需與後端 UpdateDriverDetailsHandler 解析時使用的 key 一致
+            const payload = {
+                driver_id: parseInt(driverId), // 後端期望的是整數
+                name: name,
+                phone: phone,
+                license_plate: licensePlate,
+                vehicle_brand: vehicleBrand,
+                notes: notes
+            };
+
+            console.log("準備更新司機資料，Payload:", JSON.stringify(payload));
+
+            // 4. 呼叫後端更新 API
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/driver/update-details`, {
+                    method: 'PUT', // 與後端 UpdateDriverDetailsHandler 中設定的 method 一致
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                let result;
+                const responseText = await response.text();
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    console.error("更新司機 API 回應不是有效的 JSON:", responseText);
+                    if (!response.ok) {
+                        throw new Error(`伺服器錯誤 ${response.status}: ${responseText || response.statusText}`);
+                    }
+                    result = { error: "無法解析伺服器回應，但請求可能已成功。回應內容: " + responseText };
+                }
+
+                if (response.ok) {
+                    const successMsg = result.message || '司機資料修改成功！';
+                    if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-success py-2">${escapeHtml(successMsg)}</div>`;
+                    alert(escapeHtml(successMsg));
+
+                    // 修改成功後，返回司機列表並刷新
+                    goBackToQueryDriver(); // 這個函式會點擊「查詢司機」的導覽連結
+                } else {
+                    throw new Error(result.error || `更新司機資料失敗: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error("更新司機 API 請求失敗:", error);
+                const errorMsg = `更新錯誤: ${error.message}`;
+                if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${escapeHtml(errorMsg)}</div>`;
+                alert(escapeHtml(errorMsg));
+            }
+        }
+
+        // 為了讓 saveDriverChanges 被正確呼叫，您也需要 openEditDriverView 函式來產生表單和按鈕
+        // 以下是一個非常基礎的 openEditDriverView 範例，您需要根據您的需求填充它
+        function openEditDriverView(driverId, driverData) {
+            const contentDisplay = document.getElementById('content-display');
+            if (!contentDisplay) {
+                console.error("content-display element not found for edit driver form");
+                return;
+            }
+
+            // driverData 應該是包含該司機所有資訊的物件，例如從 displayDrivers 傳過來的
+            // { driver_id, name, phone, license_plate, vehicle_brand, notes, driver_status }
+            const currentName = driverData ? escapeHtml(driverData.name || '') : '';
+            const currentPhone = driverData ? escapeHtml(driverData.phone || '') : '';
+            const currentLicensePlate = driverData ? escapeHtml(driverData.license_plate || '') : '';
+            const currentVehicleBrand = driverData ? escapeHtml(driverData.vehicle_brand || '') : '';
+            const currentNotes = driverData ? escapeHtml(driverData.notes || '') : '';
+
+            const formHtml = `
+        <div class="content-section">
+            <h4>修改司機資料 - ID: ${driverId}</h4>
+            <hr>
+            <div class="form-container" style="max-width: 600px;">
+                <div class="mb-3">
+                    <label for="editDriverNameInput" class="form-label">司機姓名：</label>
+                    <input type="text" class="form-control" id="editDriverNameInput" value="${currentName}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="editDriverPhoneInput" class="form-label">電話：</label>
+                    <input type="text" class="form-control" id="editDriverPhoneInput" value="${currentPhone}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="editDriverLicensePlateInput" class="form-label">車牌號碼：</label>
+                    <input type="text" class="form-control" id="editDriverLicensePlateInput" value="${currentLicensePlate}">
+                </div>
+                <div class="mb-3">
+                    <label for="editDriverVehicleBrandInput" class="form-label">車輛廠牌：</label>
+                    <input type="text" class="form-control" id="editDriverVehicleBrandInput" value="${currentVehicleBrand}">
+                </div>
+                <div class="mb-3">
+                    <label for="editDriverNotesInput" class="form-label">備註：</label>
+                    <textarea class="form-control" id="editDriverNotesInput" rows="3">${currentNotes}</textarea>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary me-2" onclick="goBackToQueryDriver()">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveDriverChanges(${driverId})">儲存修改</button>
+                </div>
+                <div id="driverUpdateStatusDiv" class="mt-3"></div>
+            </div>
+        </div>
+    `;
+            contentDisplay.innerHTML = formHtml;
+        }
+
+        // 輔助函式，用於返回查詢司機列表 (如果還沒有，可以這樣寫)
+        function goBackToQueryDriver() {
+            const queryDriverLink = document.querySelector('a.nav-link[href="#queryDriver"]');
+            if (queryDriverLink && typeof queryDriverLink.click === 'function') {
+                queryDriverLink.click();
+            } else {
+                console.error("無法找到 #queryDriver 連結。");
+                // Fallback: Reload the page to the hash if click doesn't work
+                // window.location.hash = '#queryDriver';
+                // window.location.reload();
+            }
         }
 
         async function viewOrderDetails(orderId) { // orderId 應該是您訂單的純數字 ID
@@ -569,6 +776,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0">修改訂單資料 - #${escapeHtml(String(data.order_id))}</h4>
                 <div>
+                    <button class="btn btn-danger me-2" onclick="confirmCancelOrder(${data.order_id})">取消訂單</button>
                     <button class="btn btn-success me-2" onclick="saveOrderChanges(${data.order_id}, ${data.customer_id})">儲存修改</button>
                     <button class="btn btn-outline-secondary" onclick="goBackToQueryOrder()">取消返回</button>
                 </div>
@@ -961,6 +1169,66 @@
             }
         }
 
+        function confirmCancelOrder(orderId) {
+            if (confirm(`您是否確定要取消訂單 #${orderId}？\n此操作將無法復原。`)) {
+                executeCancelOrder(orderId);
+            }
+        }
+
+        async function executeCancelOrder(orderId) {
+            const updateStatusDiv = document.getElementById('updateOrderStatus'); // 用於顯示訊息的 div
+            if (updateStatusDiv) {
+                updateStatusDiv.innerHTML = '<div class="alert alert-info py-2">正在取消訂單...</div>';
+            } else {
+                console.warn("未找到 updateOrderStatus div，取消進度訊息將不會顯示。");
+            }
+
+            const payload = {
+                order_id: orderId, // 後端 UpdateOrderStatusHandler 會 parseInt
+                status: "已取消"    // 新的狀態
+            };
+
+            console.log("準備取消訂單，Payload:", JSON.stringify(payload));
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/order/update-status`, {
+                    method: 'PUT', // 與後端 UpdateOrderStatusHandler 設定的 method 一致
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                let result;
+                const responseText = await response.text();
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    console.error("取消訂單 API 回應不是有效的 JSON:", responseText);
+                    if (!response.ok) {
+                        throw new Error(`伺服器錯誤 ${response.status}: ${responseText || response.statusText}`);
+                    }
+                    result = { error: "無法解析伺服器回應，但請求可能已成功。回應內容: " + responseText };
+                }
+
+                if (response.ok) {
+                    const successMsg = result.message || '訂單已成功取消！';
+                    if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-success py-2">${escapeHtml(successMsg)}</div>`;
+                    alert(escapeHtml(successMsg));
+
+                    // 取消成功後，返回訂單列表並刷新
+                    goBackToQueryOrder();
+                } else {
+                    throw new Error(result.error || `取消訂單失敗: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error("取消訂單 API 請求失敗:", error);
+                const errorMsg = `取消訂單錯誤: ${error.message}`;
+                if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${escapeHtml(errorMsg)}</div>`;
+                alert(escapeHtml(errorMsg));
+            }
+        }
+
 
 
         // --- 新增訂單表單相關 (從 add_order_form.html 整合) ---
@@ -1321,36 +1589,130 @@
             });
         }
 
-        function initializeQueryOrderView() { /* ... initializeQueryOrderView 完整定義，包含對 formatDate 和 fetchOrders 的呼叫以及事件監聽器... */
-            console.log("正在初始化查詢訂單檢視");
+        function initializeQueryOrderView() {
+            console.log("正在初始化查詢訂單檢視 (含篩選器)...");
+
+            // 1. 獲取所有必要的 HTML 元素
             const todayTab = document.getElementById('today-orders-tab');
             const tomorrowTab = document.getElementById('tomorrow-orders-tab');
-            // ... (獲取其他元素)
+            const customRangeTab = document.getElementById('custom-range-tab'); // <<< 新增：宣告 customRangeTab
             const searchCustomRangeBtn = document.getElementById('searchCustomRange');
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
-            const customRangeResultsPane = document.getElementById('customRangeResults');
+            // const customRangeResultsPane = document.getElementById('customRangeResults'); // 如果您會用到它
+            const filterRadios = document.querySelectorAll('input[name="orderStatusFilter"]');
+            const orderResultsBody = document.getElementById('orderResultsBody'); // 用於清空提示
 
-
-            if (!todayTab || !tomorrowTab || !document.getElementById('custom-range-tab') || !searchCustomRangeBtn || !startDateInput || !endDateInput || !document.getElementById('today-orders-pane') || !document.getElementById('tomorrow-orders-pane') || !customRangeResultsPane) {
-                console.error("查詢訂單檢視的一個或多個元素缺失。");
+            // 2. 檢查重要元素是否存在
+            if (!todayTab || !tomorrowTab || !customRangeTab || !searchCustomRangeBtn ||
+                !startDateInput || !endDateInput || !filterRadios || filterRadios.length === 0 || !orderResultsBody) {
+                console.error("查詢訂單檢視：一個或多個必要元素缺失。請檢查 HTML 結構和 ID。");
                 const container = document.getElementById('orderResultsTableContainer');
                 if (container) container.innerHTML = "<p class='text-danger'>查詢訂單介面初始化失敗，缺少必要元件。</p>";
                 return;
             }
-            const today = new Date(); const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-            const todayStr = formatDate(today);
-            console.log("Value of todayStr immediately after formatDate:", todayStr); // <--- 新增除錯
+
+            // 3. 初始化日期變數
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+            const todayStr = formatDate(today);       // 確保 formatDate 函式已定義
             const tomorrowStr = formatDate(tomorrow);
-            console.log("Value of tomorrowStr immediately after formatDate:", tomorrowStr); // <--- 新增除錯
-            startDateInput.value = todayStr; endDateInput.value = todayStr;
-            todayTab.addEventListener('click', function () { /* ... */ fetchOrders({ date: todayStr }); });
-            tomorrowTab.addEventListener('click', function () { /* ... */ fetchOrders({ date: tomorrowStr }); });
-            document.getElementById('custom-range-tab').addEventListener('click', function () { /* ... */ });
-            searchCustomRangeBtn.addEventListener('click', function () { /* ... */ fetchOrders({ startDate: startDateInput.value, endDate: endDateInput.value }); });
-            if (todayTab.classList.contains('active')) { fetchOrders({ date: todayStr }); }
-            console.log("查詢訂單檢視已初始化。");
+
+            // 設定自訂日期區間輸入框的預設值
+            startDateInput.value = todayStr;
+            endDateInput.value = todayStr;
+
+            // 4. 定義輔助函式
+            function getCurrentFilterValue() {
+                const selectedRadio = document.querySelector('input[name="orderStatusFilter"]:checked');
+                return selectedRadio ? selectedRadio.value : 'active'; // 預設篩選 'active'
+            }
+
+            function fetchWithCurrentFilters(dateParams) {
+                const filterStatus = getCurrentFilterValue();
+                // 將日期參數和篩選狀態合併到一個物件中傳遞給 fetchOrders
+                fetchOrders({ ...dateParams, filterStatus: filterStatus }); // 確保 fetchOrders 能處理 filterStatus
+            }
+
+            // 5. 移除舊的事件監聽器和初始載入邏輯，只使用新的邏輯
+
+            // 為 Tab 按鈕設定事件監聽器
+            todayTab.addEventListener('click', function () {
+                fetchWithCurrentFilters({ date: todayStr });
+            });
+
+            tomorrowTab.addEventListener('click', function () {
+                fetchWithCurrentFilters({ date: tomorrowStr });
+            });
+
+            customRangeTab.addEventListener('click', function () {
+                // 點擊「自訂日期區間」Tab 時，不清空結果，也不主動查詢
+                // 而是等待用戶在該 Tab 內操作日期選擇並點擊「查詢」按鈕
+                // 也可以選擇在這裡清空結果區域或顯示提示
+                // orderResultsBody.innerHTML = `<tr><td colspan="13" class="text-center">請選擇日期並點擊查詢。</td></tr>`;
+            });
+
+            searchCustomRangeBtn.addEventListener('click', function () {
+                if (!startDateInput.value || !endDateInput.value) {
+                    alert("請選擇開始和結束日期！");
+                    return;
+                }
+                if (new Date(startDateInput.value) > new Date(endDateInput.value)) {
+                    alert("開始日期不能晚於結束日期！");
+                    return;
+                }
+                fetchWithCurrentFilters({ startDate: startDateInput.value, endDate: endDateInput.value });
+            });
+
+            // 為篩選器 radio buttons 加上事件監聽器
+            filterRadios.forEach(radio => {
+                radio.addEventListener('change', function () {
+                    // 當篩選器改變時，重新觸發當前激活的 Tab 的查詢邏輯
+                    const activeTabButton = document.querySelector('#queryOrderTabs .nav-link.active');
+                    if (activeTabButton) {
+                        if (activeTabButton.id === 'today-orders-tab') {
+                            fetchWithCurrentFilters({ date: todayStr });
+                        } else if (activeTabButton.id === 'tomorrow-orders-tab') {
+                            fetchWithCurrentFilters({ date: tomorrowStr });
+                        } else if (activeTabButton.id === 'custom-range-tab') {
+                            // 如果自訂日期區間是激活的，且日期已填，則重新查詢
+                            // 否則，用戶需要手動點擊 "查詢" 按鈕
+                            if (startDateInput.value && endDateInput.value) {
+                                if (new Date(startDateInput.value) > new Date(endDateInput.value)) {
+                                    // 這裡可以選擇不 alert，讓查詢按鈕的驗證處理
+                                    return;
+                                }
+                                fetchWithCurrentFilters({ startDate: startDateInput.value, endDate: endDateInput.value });
+                            } else {
+                                // 如果日期未填，可以清空結果或提示用戶點擊查詢按鈕
+                                orderResultsBody.innerHTML = `<tr><td colspan="${document.querySelector('#orderResultsTableContainer thead tr')?.cells.length || 13}" class="text-center">請選擇日期並點擊查詢。</td></tr>`;
+                            }
+                        }
+                    }
+                });
+            });
+
+            // 6. 初始載入時，根據預選的 Tab 和篩選器載入資料
+            const activeTabOnInit = document.querySelector('#queryOrderTabs .nav-link.active');
+            if (activeTabOnInit) {
+                if (activeTabOnInit.id === 'today-orders-tab') {
+                    fetchWithCurrentFilters({ date: todayStr });
+                } else if (activeTabOnInit.id === 'tomorrow-orders-tab') {
+                    fetchWithCurrentFilters({ date: tomorrowStr });
+                } else if (activeTabOnInit.id === 'custom-range-tab') {
+                    // 自訂日期區間 Tab 初始激活時，通常不自動查詢，等待用戶操作
+                    // 您也可以選擇在這裡根據預設日期查詢，如果這是期望的行為
+                    orderResultsBody.innerHTML = `<tr><td colspan="${document.querySelector('#orderResultsTableContainer thead tr')?.cells.length || 13}" class="text-center">請選擇日期並點擊查詢。</td></tr>`;
+                }
+            } else {
+                // 如果沒有預設激活的 Tab (理論上 Bootstrap 會預設第一個為 active)
+                // 則預設載入今日訂單
+                if (todayTab) fetchWithCurrentFilters({ date: todayStr });
+            }
+            console.log("查詢訂單檢視已正確初始化。");
         }
+
 
 
         // --- DOMContentLoaded ---
@@ -1393,7 +1755,25 @@
                             initializeAddOrderForm();
                             break;
                         case '#queryOrder':
-                            currentContentHtml = `<h4>${title}</h4><p>請選擇查詢條件：</p>` +
+                            currentContentHtml = `<h4>${title}</h4>` +
+                                // --- 新增的篩選器 ---
+                                `<div class="row mb-3 align-items-center">
+                                   <div class="col-auto">
+            <label class="form-label mb-0">篩選訂單：</label>
+        </div>
+        <div class="col-auto">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="orderStatusFilter" id="filterActiveOrders" value="active" checked>
+                <label class="form-check-label" for="filterActiveOrders">顯示有效訂單</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="orderStatusFilter" id="filterAllOrders" value="all">
+                <label class="form-check-label" for="filterAllOrders">顯示所有訂單(含取消)</label>
+            </div>
+        </div>
+    </div>` +
+                                // --- 篩選器結束 ---
+                                `<p>請選擇查詢條件：</p>` + // 您原有的文字
                                 `<ul class="nav nav-tabs mb-3" id="queryOrderTabs" role="tablist"><li class="nav-item" role="presentation"><button class="nav-link active" id="today-orders-tab" data-bs-toggle="tab" data-bs-target="#today-orders-pane" type="button" role="tab" aria-controls="today-orders-pane" aria-selected="true">今日訂單</button></li><li class="nav-item" role="presentation"><button class="nav-link" id="tomorrow-orders-tab" data-bs-toggle="tab" data-bs-target="#tomorrow-orders-pane" type="button" role="tab" aria-controls="tomorrow-orders-pane" aria-selected="false">明日訂單</button></li><li class="nav-item" role="presentation"><button class="nav-link" id="custom-range-tab" data-bs-toggle="tab" data-bs-target="#custom-range-pane" type="button" role="tab" aria-controls="custom-range-pane" aria-selected="false">自訂日期區間</button></li></ul>` +
                                 `<div class="tab-content" id="queryOrderTabContent"><div class="tab-pane fade show active" id="today-orders-pane" role="tabpanel" aria-labelledby="today-orders-tab" tabindex="0"></div><div class="tab-pane fade" id="tomorrow-orders-pane" role="tabpanel" aria-labelledby="tomorrow-orders-tab" tabindex="0"></div><div class="tab-pane fade" id="custom-range-pane" role="tabpanel" aria-labelledby="custom-range-tab" tabindex="0"><div class="row g-3 align-items-center mb-3"><div class="col-auto"><label for="startDate" class="col-form-label">開始日期:</label></div><div class="col-auto"><input type="date" id="startDate" class="form-control"></div><div class="col-auto"><label for="endDate" class="col-form-label">結束日期:</label></div><div class="col-auto"><input type="date" id="endDate" class="form-control"></div><div class="col-auto"><button class="btn btn-primary" id="searchCustomRange">查詢</button></div></div><div id="customRangeResults"><p>請選擇日期並點擊查詢。</p></div></div></div>` +
                                 `<div class="mt-3"><h5>查詢結果:</h5><div id="orderResultsTableContainer" class="table-responsive"><table class="table table-striped table-hover table-sm"><thead><tr><th>訂單ID</th><th>顧客姓名</th><th>電話</th><th>地址</th><th>服務</th><th>預定時間</th><th>機場</th><th>航廈</th><th>車型</th><th>金額</th><th>訂單狀態</th><th>司機狀態</th><th>操作</th></tr></thead><tbody id="orderResultsBody"><tr><td colspan="13" class="text-center">請先選擇查詢條件以載入訂單。</td></tr></tbody></table><div id="loadingMessage" class="text-center" style="display: none;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p>載入中...</p></div><div id="noResultsMessage" class="alert alert-info" style="display: none;">找不到符合條件的訂單。</div></div></div>`;
