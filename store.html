@@ -200,6 +200,10 @@
                 <div class="modal-body">
                     <p>正在為訂單 <strong id="assignOrderDisplayId"></strong> 指派司機。</p>
                     <input type="hidden" id="assignOrderIdHidden">
+                    <div id="currentDriverInfoInModal" class="mb-2" style="display: none; font-size: 0.9em;">
+                        <strong>目前指派:</strong> <span id="assignedDriverNameInModal"></span> (ID: <span
+                            id="assignedDriverIdInModal"></span>)
+                    </div>
                     <div class="mb-3">
                         <label for="driverSelect" class="form-label">選擇司機：</label>
                         <select class="form-select" id="driverSelect" aria-label="選擇司機">
@@ -246,39 +250,69 @@
             document.getElementById('assignOrderIdHidden').value = orderId;
             const driverSelect = document.getElementById('driverSelect');
             const assignDriverError = document.getElementById('assignDriverError');
+
+            const currentDriverInfoDiv = document.getElementById('currentDriverInfoInModal');
+            const assignedDriverNameSpan = document.getElementById('assignedDriverNameInModal');
+            const assignedDriverIdSpan = document.getElementById('assignedDriverIdInModal');
+
             assignDriverError.textContent = ''; // 清除之前的錯誤訊息
             driverSelect.innerHTML = '<option selected value="">正在載入司機列表...</option>'; // 重設下拉選單
+            if (currentDriverInfoDiv) currentDriverInfoDiv.style.display = 'none';
+
 
             try {
-                // 獲取司機列表 (假設您有 /api/1/drivers 端點)
                 const response = await fetch(`${API_BASE_URL}/api/1/drivers`);
                 if (!response.ok) {
                     throw new Error(`無法獲取司機列表: ${response.status}`);
                 }
                 const drivers = await response.json();
 
-                driverSelect.innerHTML = '<option value="">-- 請選擇一位司機 --</option>'; // 預設選項
-                // 可以新增一個"取消指派"的選項，如果 currentDriverId 存在
-                if (currentDriverId !== null && currentDriverId !== undefined) {
-                    // 這裡的 value 設為一個特殊值，例如 -1 或 "UNASSIGN", 後端需要能識別
-                    // 但您目前的後端是直接 UPDATE driver_id，所以若要取消指派，應該傳遞 NULL
-                    // 為了簡單起見，我們先不加取消指派選項，或讓使用者選擇一個 "無" 司機 (如果司機列表有此選項)
-                    // 或者，後端 AssignDriverHandler 需要能處理 driver_id 為 NULL 的情況來取消指派
-                }
+                // <<< 修改：加入 "取消指派" 選項，並調整預設選項 >>>
+                driverSelect.innerHTML = ''; // 先清空
+
+                const cancelOption = document.createElement('option');
+                cancelOption.value = "0"; // 或者其他您系統中代表“未指派”的特定非空值，例如 -1
+                cancelOption.textContent = "-- 取消指派 --";
+                driverSelect.appendChild(cancelOption);
+                // <<< 修改結束 >>>
+
+                let currentAssignedDriverName = null;
 
                 if (drivers && drivers.length > 0) {
                     drivers.forEach(driver => {
                         const option = document.createElement('option');
-                        option.value = driver.driver_id; // 確保您的司機 API 回傳 driver_id
-                        option.textContent = `${driver.name} (${driver.license_plate || '車牌未知'})`;
-                        if (driver.driver_id === currentDriverId) {
-                            option.selected = true; // 如果有當前司機，則預選
+                        option.value = driver.driver_id;
+                        option.textContent = `${escapeHtml(driver.name)} (ID: ${driver.driver_id}) - ${driver.license_plate || '車牌未知'}`;
+
+                        if (currentDriverId && parseInt(driver.driver_id) === currentDriverId) {
+                            option.selected = true; // 預選當前司機
+                            currentAssignedDriverName = driver.name;
                         }
                         driverSelect.appendChild(option);
                     });
                 } else {
-                    driverSelect.innerHTML = '<option value="">目前無可用司機</option>';
+                    // 如果沒有其他司機，至少保留 "取消指派" 選項
+                    if (driverSelect.options.length === 1 && driverSelect.options[0].value === "0") {
+                        // 可以選擇禁用 "取消指派" 如果沒有其他司機且也沒有當前指派的司機
+                        // 但通常保留它以便總是能取消
+                    }
                 }
+
+                // 如果 currentDriverId 是 0 或 null (表示未指派)，則預選 "取消指派"
+                if (!currentDriverId || currentDriverId === 0) {
+                    cancelOption.selected = true;
+                }
+
+
+                // ... (填充 currentDriverInfoInModal 的邏輯 - 保持不變) ...
+                if (currentDriverId && currentDriverId !== 0 && currentAssignedDriverName && currentDriverInfoDiv && assignedDriverNameSpan && assignedDriverIdSpan) {
+                    assignedDriverNameSpan.textContent = escapeHtml(currentAssignedDriverName);
+                    assignedDriverIdSpan.textContent = escapeHtml(String(currentDriverId));
+                    currentDriverInfoDiv.style.display = 'block'; // 顯示區塊
+                } else if (currentDriverInfoDiv) { // 如果沒有 currentDriverId，確保區塊是隱藏的
+                    currentDriverInfoDiv.style.display = 'none';
+                }
+
                 assignDriverModalInstance.show(); // 顯示 Modal
             } catch (error) {
                 console.error("打開指派司機 Modal 時出錯:", error);
@@ -1564,30 +1598,77 @@
 
                 // 新增司機指派狀態欄位
                 const driverStatusCell = row.insertCell();
-                driverStatusCell.textContent = order.driver_assignment_status || '未知'; // <<< 讀取新欄位
-                if (order.driver_assignment_status === '已指派') {
-                    driverStatusCell.classList.add('text-success', 'fw-bold');
-                } else if (order.driver_assignment_status === '未指派') {
-                    driverStatusCell.classList.add('text-danger');
+                driverStatusCell.innerHTML = ''; // 清空儲存格，以便重建內容
+
+                let assignmentStatusText = '';
+                let isAssigned = false;
+
+                // 您的 VIEW (v_order_display_summary) 現在應該有 order.driver_id 和 order.driver_name 欄位
+                // order.driver_id 來自 orders.driver_id
+                // order.driver_name 來自 drivers.name
+                if (order.driver_id && String(order.driver_id).trim() !== '' && String(order.driver_id) !== '0' && String(order.driver_id).toLowerCase() !== 'null' &&
+                    order.driver_name && String(order.driver_name).trim() !== '' && String(order.driver_name).toLowerCase() !== 'n/a') {
+                    isAssigned = true;
+                    // <<< 修改這裡：同時顯示司機名稱和 ID >>>
+                    assignmentStatusText = `已指派: ${escapeHtml(order.driver_name)} (ID: ${escapeHtml(String(order.driver_id))})`;
+                } else {
+                    assignmentStatusText = '未指派';
                 }
 
-                // 新增：指派司機按鈕（緊隨司機狀態或在操作欄）
-                const assignButton = document.createElement('button');
-                assignButton.className = 'btn btn-sm btn-outline-primary ms-2'; // 使用 margin-left (ms-2) 稍微隔開
-                assignButton.textContent = '指派';
-                assignButton.title = '指派/更改司機';
-                assignButton.onclick = () => openAssignDriverModal(order.display_order_id, order.driver_id || null); // 假設 display_order_id 是數字 order_id，並傳入當前 driver_id
-                driverStatusCell.appendChild(assignButton); // 將按鈕加到司機狀態欄，或加到 actionsCell
+                const statusSpan = document.createElement('span');
+                statusSpan.textContent = assignmentStatusText;
+                statusSpan.className = isAssigned ? 'text-success fw-bold' : 'text-danger';
+                statusSpan.style.display = 'inline-block'; // 讓 min-width 生效
+                statusSpan.style.minWidth = '180px';      // 設定一個最小寬度，您可以根據實際情況調整此數值
+                // 例如 '150px', '200px' 等，確保能容納最常見的較長文字
+                statusSpan.style.marginRight = '8px';      // 保留與按鈕的間隔
+                driverStatusCell.appendChild(statusSpan);
 
-                const actionsCell = row.insertCell();
+                // 指派/更改司機按鈕
+                const assignButton = document.createElement('button');
+                assignButton.className = 'btn btn-sm btn-outline-primary';
+                assignButton.textContent = isAssigned ? '更改指派' : '指派司機';
+                assignButton.title = '指派/更改司機';
+
+                let currentDriverIdForModal = null;
+                if (order.driver_id && String(order.driver_id).trim() !== '' && String(order.driver_id).toLowerCase() !== 'null') {
+                    const parsedId = parseInt(String(order.driver_id));
+                    if (!isNaN(parsedId) && parsedId > 0) {
+                        currentDriverIdForModal = parsedId;
+                    }
+                }
+
+                // 確保 order.display_order_id 是正確的訂單ID (通常是數字)
+                const orderIdForModal = parseInt(String(order.display_order_id));
+
+                assignButton.onclick = () => openAssignDriverModal(orderIdForModal, currentDriverIdForModal);
+                driverStatusCell.appendChild(assignButton);
+
+                // <<< 新增開始：「操作」欄位內容 (第13個資料欄) >>>
+                const actionsCell = row.insertCell(); // 建立新的儲存格 (<td>)
+
                 const viewButton = document.createElement('button');
-                viewButton.className = 'btn btn-sm btn-info me-1';
+                viewButton.className = 'btn btn-sm btn-info'; // 您可以選擇合適的按鈕樣式
                 viewButton.textContent = '詳情';
-                // 確保 order.display_order_id 是傳遞給 viewOrderDetails 的正確 ID (通常是數字 order_id)
-                viewButton.onclick = () => viewOrderDetails(order.display_order_id);
+                viewButton.title = '查看訂單詳情與修改';
+
+                // 確保 order.display_order_id 是傳遞給 viewOrderDetails 的正確訂單 ID (通常是數字)
+                // viewOrderDetails 函式您先前已經定義過
+                const orderIdForDetails = parseInt(String(order.display_order_id));
+                if (!isNaN(orderIdForDetails)) {
+                    viewButton.onclick = () => viewOrderDetails(orderIdForDetails);
+                } else {
+                    console.error("無效的訂單ID，無法建立詳情按鈕:", order.display_order_id);
+                    viewButton.disabled = true; // 如果ID無效，則禁用按鈕
+                }
                 actionsCell.appendChild(viewButton);
+                // <<< 新增結束 >>>
             });
         }
+
+
+
+
 
         function initializeQueryOrderView() {
             console.log("正在初始化查詢訂單檢視 (含篩選器)...");

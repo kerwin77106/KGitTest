@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趟次管理 - Kerwin派車系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #003C5A;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            /* Added padding for the whole body */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .page-container {
+            width: 100%;
+            max-width: 900px;
+            /* Adjust as needed */
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .header .system-name {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .header h2 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: center;
+            /* Center buttons */
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .nav-button,
+        .back-button {
+            background-color: #005A87;
+            color: white;
+            border: 1px solid #0077B3;
+            border-radius: 8px;
+            padding: 12px 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-button:hover,
+        .back-button:hover {
+            background-color: #0077B3;
+        }
+
+        .orders-table-container {
+            width: 100%;
+            overflow-x: auto;
+            /* For smaller screens */
+            background-color: #004C70;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #0077B3;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+
+        th {
+            background-color: #005A87;
+        }
+
+        td {
+            background-color: #006090;
+        }
+
+        .loading-message,
+        .no-orders-message {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1em;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 0.9em;
+            display: flex;
+            /* For better alignment of driver ID and logout */
+            align-items: center;
+        }
+
+        .user-info #logoutButton {
+            background-color: #c0392b;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .user-info #logoutButton:hover {
+            background-color: #a93226;
+        }
+
+        .top-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        // Login check
+        const isLoggedIn = localStorage.getItem('isDriverLoggedIn');
+        const loggedInDriverId = localStorage.getItem('loggedInDriverId');
+
+        if (isLoggedIn !== 'true' || !loggedInDriverId) {
+            alert('您尚未登入或登入已逾時，請重新登入。');
+            window.location.href = 'driver_login.html';
+        }
+    </script>
+
+    <div class="user-info">
+        已登入司機：<span id="currentDriverIdDisplay"></span>
+        <button id="logoutButton">登出</button>
+    </div>
+
+    <div class="page-container">
+        <div class="header">
+            <div class="logo">Kerwin</div>
+            <div class="system-name">派車系統</div>
+            <h2>趟次管理</h2>
+        </div>
+
+        <div class="top-controls">
+            <button class="back-button" onclick="window.location.href='driver_dashboard.html'">返回主選單</button>
+        </div>
+
+
+        <div class="navigation-buttons">
+            <button id="todayOrdersBtn" class="nav-button">今日訂單</button>
+            <button id="tomorrowOrdersBtn" class="nav-button">明日訂單</button>
+        </div>
+
+        <div class="orders-table-container">
+            <table id="ordersTable">
+                <thead>
+                    <tr>
+                        <th>訂單ID</th>
+                        <th>顧客姓名</th>
+                        <th>顧客電話</th>
+                        <th>預定時間</th>
+                        <th>服務類型</th>
+                        <th>上車地點</th>
+                        <th>目的地(機場/航廈)</th>
+                        <th>車型</th>
+                        <th>狀態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                </tbody>
+            </table>
+            <div id="loadingMessage" class="loading-message" style="display: none;">正在載入訂單...</div>
+            <div id="noOrdersMessage" class="no-orders-message" style="display: none;">目前沒有符合條件的訂單。</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        document.getElementById('currentDriverIdDisplay').textContent = loggedInDriverId || '未知';
+
+        document.getElementById('logoutButton').addEventListener('click', function () {
+            localStorage.removeItem('isDriverLoggedIn');
+            localStorage.removeItem('loggedInDriverId');
+            alert('您已成功登出。');
+            window.location.href = 'driver_login.html';
+        });
+
+        const todayOrdersBtn = document.getElementById('todayOrdersBtn');
+        const tomorrowOrdersBtn = document.getElementById('tomorrowOrdersBtn');
+        const ordersTableBody = document.getElementById('ordersTableBody');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const noOrdersMessage = document.getElementById('noOrdersMessage');
+
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        async function fetchDriverOrders(dateStr) {
+            if (!loggedInDriverId) {
+                alert("無法獲取司機ID，請重新登入。");
+                return;
+            }
+
+            ordersTableBody.innerHTML = ''; // Clear previous orders
+            loadingMessage.style.display = 'block';
+            noOrdersMessage.style.display = 'none';
+
+            // 我們將使用 filterStatus=active 來預設只顯示有效訂單（非"已取消"）
+            // 您可以根據需求調整此處的 filterStatus
+            const queryParams = new URLSearchParams({
+                date: dateStr,
+                driver_id: loggedInDriverId,
+                filterStatus: 'active' // 只看有效訂單 (例如: 非 "已取消")
+            });
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/1/view/orders?${queryParams.toString()}`);
+                if (!response.ok) {
+                    const errorResult = await response.json().catch(() => ({ message: `HTTP 錯誤 ${response.status}` }));
+                    throw new Error(errorResult.message || `無法獲取訂單: ${response.status}`);
+                }
+                const orders = await response.json();
+                displayOrders(orders);
+            } catch (error) {
+                console.error('獲取司機訂單時發生錯誤:', error);
+                noOrdersMessage.textContent = `載入訂單失敗：${error.message}`;
+                noOrdersMessage.style.display = 'block';
+            } finally {
+                loadingMessage.style.display = 'none';
+            }
+        }
+
+        function displayOrders(orders) {
+            ordersTableBody.innerHTML = ''; // Clear
+            if (!orders || orders.length === 0) {
+                // ... (noOrdersMessage handling)
+                // Make sure noOrdersMessage's colspan matches the new number of columns
+                const colspan = document.querySelector('#ordersTable thead tr')?.cells.length || 10;
+                noOrdersMessage.innerHTML = `<td colspan="${colspan}">目前沒有符合條件的訂單。</td>`;
+
+                if (ordersTableBody.parentElement.tagName === 'TABLE') {
+                    const tempRow = ordersTableBody.insertRow();
+                    const cell = tempRow.insertCell();
+                    cell.colSpan = colspan;
+                    cell.textContent = noOrdersMessage.textContent; // Set the text directly
+                    cell.style.textAlign = 'center';
+                } else {
+                    noOrdersMessage.style.display = 'block';
+                }
+                return;
+            }
+            noOrdersMessage.style.display = 'none';
+
+            orders.forEach(order => {
+                const row = ordersTableBody.insertRow();
+                row.insertCell().textContent = order.display_order_id || 'N/A';
+                // ... (其他欄位的 row.insertCell().textContent = ...)
+                row.insertCell().textContent = order.customer_name || 'N/A';
+                row.insertCell().textContent = order.customer_phone || 'N/A';
+
+                let formattedTime = 'N/A';
+                if (order.scheduled_pickup_time) {
+                    try {
+                        const dateObj = new Date(order.scheduled_pickup_time.replace(' ', 'T'));
+                        if (!isNaN(dateObj.getTime())) {
+                            formattedTime = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+                        } else {
+                            formattedTime = order.scheduled_pickup_time.split(' ')[1] || order.scheduled_pickup_time;
+                        }
+                    } catch (e) { formattedTime = order.scheduled_pickup_time; }
+                }
+                row.insertCell().textContent = formattedTime;
+                row.insertCell().textContent = order.service_type || 'N/A';
+                row.insertCell().textContent = order.display_address || 'N/A';
+                row.insertCell().textContent = `${order.airport || ''} ${order.terminal || ''}`.trim() || 'N/A';
+                row.insertCell().textContent = order.car_model || 'N/A';
+                row.insertCell().textContent = order.order_status || 'N/A'; // 當前狀態
+
+                const actionCell = row.insertCell();
+                actionCell.appendChild(renderActionButton(order)); // <<< 呼叫新函式
+            });
+        }
+
+        function renderActionButton(order) {
+            const buttonContainer = document.createElement('div');
+            const currentStatus = order.order_status;
+            const orderId = order.display_order_id; // 確保這是數字 order_id
+
+            let btnText = '';
+            let action = '';
+            let disabled = false;
+            letdisplayText = '';
+
+            // 這裡的 order_status 要和您資料庫以及後端 DriverReportStatusHandler 中定義的字串完全一致
+            switch (currentStatus) {
+                // 假設 "已指派" 或其他開店家指派後的初始狀態，會觸發 "出發"
+                // 您可能需要檢查多個可能的初始狀態
+                case '已指派': // 或者其他表示 "準備讓司機出發" 的狀態
+                case '已確認': // 假設這也是一個有效的初始狀態
+                // 新增一個通用初始狀態判斷，如果不是後面明確的司機流程狀態，也不是已完成/取消，則顯示出發
+                // default: // Be careful with default if other statuses exist
+                    btnText = '出發';
+                    action = 'depart';
+                    break;
+                case '司機已出發':
+                    btnText = '抵達上車點';
+                    action = 'arrive_pickup';
+                    break;
+                case '已抵達上車點':
+                    btnText = '客人上車';
+                    action = 'customer_onboard';
+                    break;
+                case '乘客已上車':
+                    btnText = '任務完成'; // "客人下車" 的最終動作
+                    action = 'complete_trip';
+                    break;
+                case '行程已完成':
+                    disabled = true;
+                    displayText = '任務已完成';
+                    break;
+                case '已取消':
+                    disabled = true;
+                    displayText = '訂單已取消';
+                    break;
+                default:
+                    // 如果狀態不是上面任何一個，且也不是司機流程中的已知狀態，
+                    // 則假設它可以是 "出發" 的前置狀態
+                    // 但為了安全，可以先不顯示按鈕或顯示"狀態未知"
+                    // 這裡我們預設，如果不是上述特定狀態，則可 "出發"
+                    // 但這需要您確認 "已指派" 等狀態確實會被正確設定
+                    // 為避免混淆，如果狀態不在明確流程中，先顯示狀態文字
+                    const knownDriverFlowStatuses = ['司機已出發', '已抵達上車點', '乘客已上車', '行程已完成', '已取消'];
+                    if (!knownDriverFlowStatuses.includes(currentStatus)) {
+                        btnText = '出發';
+                        action = 'depart';
+                    } else {
+                        disabled = true;
+                        displayText = currentStatus || '狀態不明';
+                    }
+                    break;
+            }
+
+            if (disabled || !btnText) {
+                const statusText = document.createElement('span');
+                statusText.textContent = displayText || currentStatus || '---';
+                statusText.style.fontSize = '0.85em';
+                if(currentStatus === '行程已完成') statusText.style.color = '#2ecc71'; // Green
+                if(currentStatus === '已取消') statusText.style.color = '#e74c3c'; // Red
+                buttonContainer.appendChild(statusText);
+            } else {
+                const button = document.createElement('button');
+                button.textContent = btnText;
+                button.className = 'status-update-btn nav-button'; // Reuse nav-button style or create a new one
+                button.style.padding = '5px 10px'; // Smaller padding for table button
+                button.style.fontSize = '0.85em';
+                button.dataset.orderId = orderId;
+                button.dataset.action = action;
+                buttonContainer.appendChild(button);
+            }
+            return buttonContainer;
+        }
+
+                ordersTableBody.addEventListener('click', function(event) {
+            if (event.target.classList.contains('status-update-btn')) {
+                const button = event.target;
+                const orderId = button.dataset.orderId;
+                const action = button.dataset.action;
+                const driverId = localStorage.getItem('loggedInDriverId');
+
+                if (!driverId) {
+                    alert("無法獲取司機資訊，請重新登入。");
+                    return;
+                }
+
+                // 防止重複點擊
+                button.disabled = true;
+                button.textContent = '處理中...';
+
+                handleStatusUpdate(orderId, driverId, action, button);
+            }
+        });
+
+        async function handleStatusUpdate(orderId, driverId, action, buttonElement) {
+            const payload = {
+                order_id: parseInt(orderId),
+                driver_id: parseInt(driverId),
+                action: action
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/driver/report-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    alert(result.message || "狀態更新成功！");
+                    // 重新載入當前視圖的訂單 (今日或明日)
+                    // 判斷當前是哪個按鈕被激活，或者直接刷新最後一次查詢的日期
+                    // 為簡單起見，這裡假設用戶會手動刷新或點擊 "今日/明日訂單" 按鈕
+                    // 更好的做法是記錄當前查詢的日期並重新調用 fetchDriverOrders
+                    // 例如，找到哪個日期按鈕是 "active" (如果有的話)
+                    // 或者直接刷新當前顯示的列表：
+                    const activeDateButton = document.querySelector('.navigation-buttons button.active'); // 你需要給當前激活的日期按鈕一個 'active' class
+                    if (activeDateButton && activeDateButton.id === 'todayOrdersBtn') {
+                        fetchDriverOrders(formatDate(new Date()));
+                    } else if (activeDateButton && activeDateButton.id === 'tomorrowOrdersBtn') {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        fetchDriverOrders(formatDate(tomorrow));
+                    } else {
+                        // Fallback: if we don't know which was active, try refreshing today's as a guess or prompt user
+                        // Or, even better, store the last fetched date string in a variable.
+                         alert("請手動刷新列表以查看最新狀態，或重新點擊今日/明日訂單按鈕。");
+                         // To make it refresh the current list without knowing which button,
+                         // you'd need to store lastUsedDateStr.
+                         // For now, let's re-enable the button:
+                         if(buttonElement) {
+                            // We'd need to know the *new* button text based on result.new_status
+                            // This part is tricky without re-rendering the whole row or list.
+                            // Simplest is full list refresh.
+                            // The alert above is a temporary measure.
+                         }
+                    }
+                     // After a successful update, we should refresh the list to show the new button/status
+                     // Let's try to determine which list to refresh based on which button might have been last clicked
+                     // This is a bit of a guess. A better way is to store the last `dateStr` used for fetching.
+                     if (document.getElementById('todayOrdersBtn').classList.contains('temp-active')) { // Add 'temp-active' class on click
+                        fetchDriverOrders(formatDate(new Date()));
+                     } else if (document.getElementById('tomorrowOrdersBtn').classList.contains('temp-active')) {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        fetchDriverOrders(formatDate(tomorrow));
+                     } else {
+                        // If no active button hint, maybe refresh based on what's more likely or don't auto-refresh
+                        // Forcing a refresh of today's orders as a default for now
+                        fetchDriverOrders(formatDate(new Date()));
+                     }
+
+
+                } else {
+                    alert(`狀態更新失敗: ${result.message || response.statusText}`);
+                    if(buttonElement) {
+                        buttonElement.disabled = false; // Re-enable button on failure
+                        // Restore original button text if you stored it or can derive it
+                        // For simplicity, just re-enabling. The text will be fixed on next list render.
+                        // buttonElement.textContent = originalButtonText;
+                    }
+                }
+            } catch (error) {
+                console.error('狀態更新請求錯誤:', error);
+                alert(`狀態更新請求時發生錯誤: ${error.message}`);
+                 if(buttonElement) {
+                    buttonElement.disabled = false;
+                    // buttonElement.textContent = originalButtonText;
+                 }
+            }
+        }
+
+        todayOrdersBtn.addEventListener('click', () => {
+            const today = new Date();
+            noOrdersMessage.textContent = '今日沒有指派給您的訂單。'; // Update message for today
+            fetchDriverOrders(formatDate(today));
+        });
+
+        tomorrowOrdersBtn.addEventListener('click', () => {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            noOrdersMessage.textContent = '明日沒有指派給您的訂單。'; // Update message for tomorrow
+            fetchDriverOrders(formatDate(tomorrow));
+        });
+
+        // Optionally, load today's orders by default when page loads
+        // window.addEventListener('DOMContentLoaded', () => {
+        //     const today = new Date();
+        //     fetchDriverOrders(formatDate(today));
+        // });
+    </script>
+</body>
+
+</html>

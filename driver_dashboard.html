@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>派車系統 - 司機主頁</title>
+    <style>
+        /* 您先前提供的 CSS 樣式 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #003C5A; /* 深藍色背景 */
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        /* ... (省略您提供的其他CSS，請確保它們在這裡) ... */
+         .header {
+            padding: 20px;
+            text-align: center;
+            width: 100%;
+        }
+        .logo {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .system-name {
+            font-size: 1.2em;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 三欄佈局 */
+            gap: 15px; /* 按鈕間距 */
+            padding: 20px;
+            width: 90%;
+            max-width: 600px; /* 限制最大寬度 */
+            margin-top: 20px;
+        }
+        .button {
+            background-color: #005A87; /* 按鈕背景色 */
+            border: 1px solid #0077B3; /* 按鈕邊框 */
+            border-radius: 10px; /* 按鈕圓角 */
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #0077B3; /* 滑鼠懸停時的按鈕背景色 */
+        }
+        .icon-car-manage::before { content: "🚗"; font-size: 2em; margin-bottom: 5px; }
+        .icon-car-dispatch::before { content: "ℹ️"; font-size: 2em; margin-bottom: 5px; }
+        .icon-car-cancel::before { content: "❌"; font-size: 2em; margin-bottom: 5px; }
+        .icon-announcement::before { content: "📢"; font-size: 2em; margin-bottom: 5px; }
+        .icon-history::before { content: "📜"; font-size: 2em; margin-bottom: 5px; }
+        .icon-driver-area::before { content: "👤"; font-size: 2em; margin-bottom: 5px; }
+        .announcement-dot {
+            background-color: red;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 5px;
+            vertical-align: super;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: #0077B3;
+            width: 90%;
+            max-width: 600px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        .user-info {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 0.9em;
+        }
+        .user-info #logoutButton {
+            background-color: #c0392b;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .user-info #logoutButton:hover {
+            background-color: #a93226;
+        }
+
+    </style>
+</head>
+<body>
+    <script>
+        // 頁面載入時檢查登入狀態
+        const isLoggedIn = localStorage.getItem('isDriverLoggedIn');
+        const driverId = localStorage.getItem('loggedInDriverId');
+
+        if (isLoggedIn !== 'true' || !driverId) {
+            alert('您尚未登入或登入已逾時，請重新登入。');
+            window.location.href = 'driver_login.html'; // 重定向到登入頁面
+        }
+    </script>
+
+    <div class="user-info">
+        已登入司機：<span id="currentDriverId"></span>
+        <button id="logoutButton">登出</button>
+    </div>
+
+    <div class="header">
+        <div class="logo">Kerwin</div>
+        <div class="system-name">派車系統</div>
+    </div>
+
+    <div class="main-content">
+        <div class="button" onclick="navigateTo('trip_management.html')">
+            <div class="icon-car-manage"></div>
+            <span>趟次管理</span>
+        </div>
+        <div class="button" onclick="navigateTo('modify_trips.html')">
+            <div class="icon-car-dispatch"></div>
+            <span>趟次異動</span>
+        </div>
+        <div class="button" onclick="navigateTo('cancel_trips.html')">
+            <div class="icon-car-cancel"></div>
+            <span>趟次取消</span>
+        </div>
+        <div class="button" onclick="navigateTo('announcements.html')">
+            <div class="icon-announcement"></div>
+            <span>訊息公告 <span class="announcement-dot"></span></span>
+        </div>
+        <div class="button" onclick="navigateTo('trip_history.html')">
+            <div class="icon-history"></div>
+            <span>歷史紀錄</span>
+        </div>
+        <div class="button" onclick="navigateTo('driver_profile.html')">
+            <div class="icon-driver-area"></div>
+            <span>司機專區</span>
+        </div>
+    </div>
+    <hr>
+
+    <script>
+        // 顯示當前登入的司機 ID
+        document.getElementById('currentDriverId').textContent = driverId || '未知';
+
+        // 登出按鈕功能
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            localStorage.removeItem('isDriverLoggedIn');
+            localStorage.removeItem('loggedInDriverId');
+            alert('您已成功登出。');
+            window.location.href = 'driver_login.html';
+        });
+
+        // 簡易導航函式 (您可以根據需要擴展)
+       function navigateTo(page) {
+            // 在實際應用中，您可能會在這裡做更複雜的路由或頁面載入
+            // alert(`導向到 ${page} (此為範例，尚未實作頁面)`); // 可以先註解掉 alert
+            window.location.href = page; // 如果您已經有這些頁面
+            }
+    </script>
+</body>
+</html>

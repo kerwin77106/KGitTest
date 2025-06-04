@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>司機登入 - Kerwin派車系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #003C5A; /* 深藍色背景 */
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .login-container {
+            background-color: #005A87;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-container h2 {
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+        .login-container .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .login-container .system-name {
+            font-size: 1em;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #0077B3;
+            border-radius: 5px;
+            background-color: #004C70;
+            color: white;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        .form-group input::placeholder {
+            color: #b0c4de;
+        }
+        .login-button {
+            background-color: #0077B3;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+        .login-button:hover {
+            background-color: #008CBA;
+        }
+        .error-message {
+            color: #ffdddd;
+            background-color: #902020;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            display: none; /* 預設隱藏 */
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">Kerwin</div>
+        <div class="system-name">派車系統 - 司機登入</div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="driverId">司機代號 (Driver ID):</label>
+                <input type="text" id="driverId" name="driverId" placeholder="請輸入您的司機代號" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密碼:</label>
+                <input type="password" id="password" name="password" placeholder="預設密碼為 0000" required>
+            </div>
+            <button type="submit" class="login-button">登入</button>
+        </form>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000'; // 與您 Server.java 設定一致
+
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // 防止表單傳統提交
+
+            const driverId = document.getElementById('driverId').value;
+            const password = document.getElementById('password').value;
+            const errorMessageDiv = document.getElementById('errorMessage');
+            errorMessageDiv.style.display = 'none'; // 隱藏先前的錯誤訊息
+
+            if (!driverId || !password) {
+                errorMessageDiv.textContent = '司機代號和密碼皆須填寫。';
+                errorMessageDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/driver/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ driver_id: driverId, password: password }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    // 登入成功
+                    alert(result.message || '登入成功！');
+                    // 儲存登入狀態和司機ID (這裡使用 localStorage，也可以用 sessionStorage)
+                    localStorage.setItem('loggedInDriverId', result.driver_id);
+                    localStorage.setItem('isDriverLoggedIn', 'true');
+                    // 導向到司機主頁面 (假設您的司機主頁是 driver_dashboard.html)
+                    window.location.href = 'driver_dashboard.html'; // <<< 請確認您的司機主頁面檔案名稱
+                } else {
+                    // 登入失敗
+                    errorMessageDiv.textContent = result.message || '登入失敗，請檢查您的代號和密碼。';
+                    errorMessageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('登入請求失敗:', error);
+                errorMessageDiv.textContent = '登入時發生錯誤，請稍後再試。';
+                errorMessageDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
