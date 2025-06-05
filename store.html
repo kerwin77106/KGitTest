@@ -1596,6 +1596,35 @@
 
                 row.insertCell().textContent = order.order_status || 'N/A'; // 訂單狀態
 
+                 const statusCell = row.insertCell(); // 獲取訂單狀態的儲存格 (<td>)
+            const currentOrderStatus = order.order_status || 'N/A'; // 獲取當前訂單狀態文字
+            statusCell.textContent = currentOrderStatus; // 先設定文字內容
+
+            // 清除可能存在的舊樣式 (如果表格是動態更新而非完全重建)
+            statusCell.className = ''; // 清除所有 class
+            statusCell.style.color = '';  // 重設行內 style 顏色
+
+            // 定義不同狀態群組，請確保這些字串與您資料庫中 `orders.order_status` 的實際值完全匹配
+            const inProgressStatuses = ["司機已出發", "已抵達上車點", "乘客已上車"];
+            const completedStatuses = ["行程已完成", "已完成"]; // "已完成" 可能是由店家手動設定的
+            const cancelledStatuses = ["已取消", "訂單取消"];
+
+            if (inProgressStatuses.includes(currentOrderStatus)) {
+                statusCell.classList.add('text-primary'); // Bootstrap 的藍色
+                // 或者，如果您不想用 Bootstrap class： statusCell.style.color = 'blue';
+            } else if (completedStatuses.includes(currentOrderStatus)) {
+                statusCell.classList.add('text-success'); // Bootstrap 的綠色
+                // 或者： statusCell.style.color = 'green';
+            } else if (cancelledStatuses.includes(currentOrderStatus)) {
+                statusCell.classList.add('text-danger');  // Bootstrap 的紅色
+                // 或者： statusCell.style.color = 'red';
+            } else {
+                // 其他狀態 (例如 "已確認", "已指派司機" 等被視為 "待處理")
+                // 將使用預設的文字顏色，不需要特別設定
+                // 如果您想給 "待處理" 一個特定顏色 (例如深灰色)，可以這樣加：
+                // statusCell.classList.add('text-dark'); // Bootstrap 的深灰色
+            }
+
                 // 新增司機指派狀態欄位
                 const driverStatusCell = row.insertCell();
                 driverStatusCell.innerHTML = ''; // 清空儲存格，以便重建內容
