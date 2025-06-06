@@ -232,13 +232,25 @@
         let assignDriverModalInstance = null; // 用於保存 Bootstrap Modal 實例
 
         // 初始化 Modal 實例 (可以在 DOMContentLoaded 中執行一次)
-        document.addEventListener('DOMContentLoaded', function () {
+        /*功用：這是整個程式的進入點。它會等待整個 HTML 文件被完全載入和解析後才執行內部的程式碼。
+        主要工作：
+
+        1.獲取側邊欄的所有導覽連結 (#sidebar .nav-link)。
+        2.為每一個連結加上 click 事件監聽器。當使用者點擊任何一個導覽連結時，它會觸發對應的動作。
+        3.透過 switch (targetId) 判斷使用者點擊了哪個連結 (例如 #addOrder、#queryDriver)。
+        4.根據點擊的連結，動態地用 innerHTML 生成對應功能的 HTML 內容 (例如新增訂單的表單、查詢司機的表格)，並顯示在主內容區 (#content-display)。
+        5.在載入完特定功能的 HTML 後，呼叫該功能的初始化函式 (例如 initializeAddOrderForm() 或 initializeQueryDriverView())，來啟動該功能的動態效果 (如下拉選單填充、資料獲取等)。*/
+
+        document.addEventListener('DOMContentLoaded', function () {     //這部分是整個網站的基礎，負責頁面初始化和內容切換
             const assignDriverModalElement = document.getElementById('assignDriverModal');
             if (assignDriverModalElement) {
                 assignDriverModalInstance = new bootstrap.Modal(assignDriverModalElement);
             }
         });
 
+        //司機管理
+        //openAssignDriverModal(orderId, currentDriverId) 打開「指派司機」的彈出視窗 (Modal)。
+        //主要工作：從後端 /api/1/drivers 獲取所有可用的司機列表，並填充到彈出視窗的下拉選單中。如果訂單原本已有指派的司機，則會預先選中該司機。
         async function openAssignDriverModal(orderId, currentDriverId) {
             if (!assignDriverModalInstance) {
                 console.error("Assign Driver Modal 實例未初始化。");
@@ -323,6 +335,8 @@
             }
         }
 
+        //submitDriverAssignment()提交司機指派
+        //主要工作：從彈出視窗中獲取選中的司機 ID 和訂單 ID，並將它們發送到後端 /api/order/assign-driver API，完成指派。
         async function submitDriverAssignment() {
             const orderId = document.getElementById('assignOrderIdHidden').value;
             const driverSelect = document.getElementById('driverSelect');
@@ -377,7 +391,7 @@
             }
         }
 
-        // --- 新增司機相關函式 ---
+        //submitNewDriver(): 提交新司機的資料到後端 /api/2/insert
         async function submitNewDriver() {
             const nameInput = document.getElementById("driverNameInput");
             const phoneInput = document.getElementById("driverPhoneInput");
@@ -435,7 +449,8 @@
                 alert("提交請求時發生錯誤，請檢查網路連線。");
             }
         }
-
+        //功用：安全性函式。防止跨網站指令碼（XSS）攻擊
+        //主要工作：將字串中的特殊 HTML 字元（如 <、>、&）轉換成它們的實體編碼（如 &lt;、&gt;、&amp;），這樣即使有惡意程式碼被輸入，也只會被當成純文字顯示，而不會被瀏覽器執行。
         function escapeHtml(unsafe) {
             if (unsafe == null) return '';
             return String(unsafe)
@@ -443,12 +458,12 @@
                 .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // --- 查詢司機相關函式 ---
+        //initializeQueryDriverView(): 初始化「查詢司機」頁面，並呼叫 fetchDrivers
         function initializeQueryDriverView() {
             console.log("Initializing Query Driver View");
             fetchDrivers();
         }
-
+        //fetchDrivers(): 從 /api/1/drivers API 獲取所有司機的列表。
         async function fetchDrivers() {
             const driverResultsBody = document.getElementById('driverResultsBody');
             const loadingMessage = document.getElementById('driverLoadingMessage');
@@ -485,7 +500,7 @@
                 if (loadingMessage) loadingMessage.style.display = 'none';
             }
         }
-
+        //displayDrivers(drivers): 將司機列表顯示在表格中，並生成「修改」和「刪除」按鈕。
         function displayDrivers(drivers) {
             const driverResultsBody = document.getElementById('driverResultsBody');
             const noResultsMessage = document.getElementById('noDriverResultsMessage');
@@ -548,13 +563,14 @@
                 actionsCell.appendChild(deleteButton);
             });
         }
-
+        //confirmSoftDeleteDriver() / softDeleteDriver(): 處理「刪除」司機的邏輯。
+        //這是一個軟刪除 (Soft Delete)，它不會真的從資料庫刪除紀錄，而是透過呼叫 /api/driver/update-status API 將司機的狀態設為「不活動」(-1)。
         function confirmSoftDeleteDriver(driverId, driverName) {
             if (confirm(`您確定要刪除 (停用) 司機 "${escapeHtml(driverName)}" (ID: ${driverId}) 嗎？\n此操作會將司機狀態設為不活動 (-1)。`)) {
                 softDeleteDriver(driverId, -1); // 傳遞 -1 作為新的狀態
             }
         }
-
+        //將司機的狀態設為「不活動」(-1)。
         async function softDeleteDriver(driverId, newStatus) { // newStatus 可以是 -1 (停用) 或 0 (啟用)
             const actionText = (newStatus === -1) ? "停用" : "啟用";
             // 可選：在按鈕旁顯示小小的 loading 狀態
@@ -587,7 +603,7 @@
                 alert(`${actionText} 司機時發生錯誤: ${err.message}`);
             }
         }
-
+        //saveDriverChanges(driverId): 儲存對司機資料的修改，發送 PUT 請求到 /api/driver/update-details。
         async function saveDriverChanges(driverId) { // driverId 可以從按鈕點擊時傳入
             const updateStatusDiv = document.getElementById('driverUpdateStatusDiv'); // 假設有這個 div 顯示訊息
             if (updateStatusDiv) {
@@ -669,8 +685,7 @@
             }
         }
 
-        // 為了讓 saveDriverChanges 被正確呼叫，您也需要 openEditDriverView 函式來產生表單和按鈕
-        // 以下是一個非常基礎的 openEditDriverView 範例，您需要根據您的需求填充它
+        //openEditDriverView(driverId, driverData): 載入並顯示特定司機的編輯表單。
         function openEditDriverView(driverId, driverData) {
             const contentDisplay = document.getElementById('content-display');
             if (!contentDisplay) {
@@ -722,7 +737,7 @@
             contentDisplay.innerHTML = formHtml;
         }
 
-        // 輔助函式，用於返回查詢司機列表 (如果還沒有，可以這樣寫)
+        //功用：提供「返回列表」的功能
         function goBackToQueryDriver() {
             const queryDriverLink = document.querySelector('a.nav-link[href="#queryDriver"]');
             if (queryDriverLink && typeof queryDriverLink.click === 'function') {
@@ -735,6 +750,8 @@
             }
         }
 
+        //viewOrderDetails(orderId)顯示特定一筆訂單的詳細資料以供修改。
+        //主要工作：點擊「詳情」按鈕後觸發。它會呼叫後端 /api/order/details/{orderId} API 來獲取該訂單的完整資料，然後呼叫 renderOrderDetails 來呈現編輯畫面。
         async function viewOrderDetails(orderId) { // orderId 應該是您訂單的純數字 ID
             const contentDisplay = document.getElementById('content-display');
             if (!contentDisplay) {
@@ -771,6 +788,8 @@
             }
         }
 
+        //renderOrderDetails(data)將訂單的詳細資料渲染成一個可編輯的表單
+        //主要工作：動態生成包含訂單所有欄位的 HTML 表單，並將從 API 獲取的資料填入對應的輸入框、下拉選單中。
         async function renderOrderDetails(data) {
             const contentDisplay = document.getElementById('content-display');
 
@@ -1058,7 +1077,8 @@
         }
 
 
-        // 新增：儲存訂單修改的函式
+        // saveOrderChanges(orderId, customerId) 儲存訂單修改的函式
+        //主要工作：從訂單修改表單中收集所有資料，打包成 JSON，並以 PUT 請求發送到後端 /api/order/update API 來更新資料庫中的紀錄。
         async function saveOrderChanges(orderId, customerId) {
             const updateStatusDiv = document.getElementById('updateOrderStatus');
             if (updateStatusDiv) {
@@ -1084,7 +1104,7 @@
             });
             const addonProductIdsString = addonIdArray.join('&'); // 例如 "202&203" 或 ""
 
-            // 3. 前端基本驗證 (您可以根據需要做得更詳細)
+            // 3. 前端基本驗證 防呆
             if (!customerName || !customerPhone || !customerAddress || !scheduledPickupTime || !carProductIdStr || !totalAmountStr) {
                 const errorMsg = "錯誤：顧客姓名、電話、地址、預定時間、車型和總金額為必填項！";
                 if (updateStatusDiv) updateStatusDiv.innerHTML = `<div class="alert alert-danger py-2">${errorMsg}</div>`;
@@ -1185,7 +1205,8 @@
                 alert(escapeHtml(errorMsg));
             }
         }
-        // 3. **新增** goBackToQueryOrder 函式
+
+        //goBackToQueryOrder()提供「返回列表」的功能。
         function goBackToQueryOrder() {
             // 模擬點擊「查詢訂單」導覽連結以重新載入該視圖
             const queryOrderLink = document.querySelector('a.nav-link[href="#queryOrder"]');
@@ -1203,12 +1224,16 @@
             }
         }
 
+        //confirmCancelOrder(orderId)跳出確認對話框 到executeCancelOrder(orderId)
+        //處理取消訂單
+
         function confirmCancelOrder(orderId) {
             if (confirm(`您是否確定要取消訂單 #${orderId}？\n此操作將無法復原。`)) {
                 executeCancelOrder(orderId);
             }
         }
-
+        //executeCancelOrder(orderId) 實際取消訂單的函式
+        //在收到確認後，向後端 /api/order/update-status API 發送請求，將訂單狀態更新為「已取消」
         async function executeCancelOrder(orderId) {
             const updateStatusDiv = document.getElementById('updateOrderStatus'); // 用於顯示訊息的 div
             if (updateStatusDiv) {
@@ -1276,6 +1301,9 @@
         };
         let airportSelect, terminalSelect, carTypeSelect, addonsContainer, submissionStatusDiv;
 
+        //populateSelectWithOptions
+        //這是一個可重複使用的函式，專門用來非同步 (async) 地從一個指定的 API 端點 (URL) 獲取資料，
+        // 然後將這些資料動態地生成為 <option> 元素，並填入一個指定的 <select> 下拉選單中。
         async function populateSelectWithOptions(selectElement, apiUrl, valueField, textField, defaultOptionText = "請選擇...") {
             // console.log(`populateSelectWithOptions called for: ${selectElement ? selectElement.id : 'null_selectElement'}, URL: ${apiUrl}`);
             if (!selectElement) {
@@ -1310,8 +1338,12 @@
             // console.log(`populateSelectWithOptions for ${selectElement.id} finished.`);
         }
 
-        function populateAirports() { /* ... populateAirports 完整定義 ... */
-            // console.log("populateAirports 函式開始執行。");
+        //功用：這是一組「填充資料」的函式。
+        //主要工作：
+        //它們會分別呼叫後端的 API (例如 /api/1/products/cars 來獲取車型列表)。
+        //獲取到資料後，動態地建立 <option> (用於下拉選單) 或 checkbox (用於加購項目)，並將它們插入到對應的表單元素中。
+        //populateTerminals() 會根據所選的機場來動態更新航廈選項。
+        function populateAirports() {
             if (!airportSelect) { console.error("錯誤：在 populateAirports 中 airportSelect 是 null！"); return; }
             airportSelect.innerHTML = `<option value="">請選擇機場...</option>`;
             API_AIRPORTS.forEach(airport => {
@@ -1320,10 +1352,14 @@
                 option.textContent = airport.name;
                 airportSelect.appendChild(option);
             });
-            // console.log("populateAirports 函式執行完畢。");
         }
 
-        function populateTerminals(selectedAirportName) { /* ... populateTerminals 完整定義 ... */
+        //功用：這是一組「填充資料」的函式。
+        //主要工作：
+        //它們會分別呼叫後端的 API (例如 /api/1/products/cars 來獲取車型列表)。
+        //獲取到資料後，動態地建立 <option> (用於下拉選單) 或 checkbox (用於加購項目)，並將它們插入到對應的表單元素中。
+        //populateTerminals() 會根據所選的機場來動態更新航廈選項。
+        function populateTerminals(selectedAirportName) {
             // console.log("populateTerminals 函式開始執行，選擇的機場是:", selectedAirportName);
             if (!terminalSelect) { console.error("錯誤：在 populateTerminals 中 terminalSelect 是 null！"); return; }
             terminalSelect.innerHTML = `<option value="">請選擇航廈...</option>`;
@@ -1343,15 +1379,22 @@
             // console.log("populateTerminals 函式執行完畢。");
         }
 
-        async function populateCarTypes() { /* ... populateCarTypes 完整定義 ... */
-            // console.log("populateCarTypes 函式開始執行。");
+        //功用：這是一組「填充資料」的函式。
+        //主要工作：
+        //它們會分別呼叫後端的 API (例如 /api/1/products/cars 來獲取車型列表)。
+        //獲取到資料後，動態地建立 <option> (用於下拉選單) 或 checkbox (用於加購項目)，並將它們插入到對應的表單元素中。
+        //populateTerminals() 會根據所選的機場來動態更新航廈選項。
+        async function populateCarTypes() {
             if (!carTypeSelect) { console.error("錯誤：在 populateCarTypes 中 carTypeSelect 是 null！"); return; }
             await populateSelectWithOptions(carTypeSelect, `${API_BASE_URL}/api/1/products/cars`, 'product_id', 'Product_name', '請選擇車輛類型...');
-            // console.log("populateCarTypes 函式執行完畢。");
         }
 
-        async function populateAddons() { /* ... populateAddons 完整定義 ... */
-            // console.log("populateAddons 函式開始執行。");
+        //功用：這是一組「填充資料」的函式。
+        //主要工作：
+        //它們會分別呼叫後端的 API (例如 /api/1/products/cars 來獲取車型列表)。
+        //獲取到資料後，動態地建立 <option> (用於下拉選單) 或 checkbox (用於加購項目)，並將它們插入到對應的表單元素中。
+        //populateTerminals() 會根據所選的機場來動態更新航廈選項。
+        async function populateAddons() {
             if (!addonsContainer) { console.error("錯誤：在 populateAddons 中 addonsContainer 是 null！"); if (document.getElementById('addonsContainer')) document.getElementById('addonsContainer').innerHTML = '<p>錯誤：找不到加購項目容器</p>'; return; }
             addonsContainer.innerHTML = '<p>正在載入加購項目...</p>';
             try {
@@ -1371,25 +1414,34 @@
                     addonsContainer.textContent = '目前無加購項目。';
                 } else { addonsContainer.textContent = '加購項目資料格式錯誤。'; }
             } catch (error) { addonsContainer.innerHTML = '<p>載入加購項目時發生錯誤</p>'; }
-            // console.log("populateAddons 函式執行完畢。");
         }
 
-        window.submitOrder = async function () { /* ... submitOrder 完整定義 ... */
+        /*submitOrder()
+        功用：提交訂單的核心函式。
+        主要工作：
+        1.當使用者點擊「新增訂單」按鈕時觸發。
+        2.從表單中讀取使用者輸入的所有資料 (顧客姓名、電話、時間、選擇的車型等)。
+        3.進行前端的基本驗證，確保必填欄位都有填寫。
+        4.將所有資料打包成一個 JSON 物件。
+        5.使用 fetch 將這個 JSON 物件以 POST 請求的方式發送到後端 API /api/orders/create。
+        6.根據後端的回應，在頁面上顯示成功或失敗的訊息。*/
+        window.submitOrder = async function () {
             if (!submissionStatusDiv) { alert("提交狀態顯示區域未準備好，請重試。"); return; }
             submissionStatusDiv.textContent = ''; submissionStatusDiv.className = '';
+            //(獲取表單欄位值)
             const customerName = document.getElementById('customerName').value;
             const customerPhone = document.getElementById('customerPhone').value;
-            // ... (獲取其他表單欄位值) ...
             const airport = document.getElementById('airport').value;
             const terminal = document.getElementById('terminal').value;
-            const serviceTypeVal = document.getElementById('serviceType').value; // Renamed to avoid conflict
-            const scheduledPickupTimeVal = document.getElementById('scheduledPickupTime').value; // Renamed
+            const serviceTypeVal = document.getElementById('serviceType').value;
+            const scheduledPickupTimeVal = document.getElementById('scheduledPickupTime').value;
             const carTypeElement = document.getElementById('carType');
             const carProductId = carTypeElement ? carTypeElement.value : "";
             const totalAmountStr = document.getElementById('totalAmount').value;
 
             const selectedAddons = [];
             const addonCheckboxes = document.querySelectorAll('#addonsContainer input[name="addons"]:checked');
+            //因JSON切割會有問題  所有用字串中間加&來處理回傳 到後端再拆解
             let addonIdArray = [];
             addonCheckboxes.forEach(checkbox => {
                 addonIdArray.push(checkbox.value); // 收集所有選中的 productId (字串形式)
@@ -1403,7 +1455,7 @@
 
 
             addonCheckboxes.forEach(checkbox => { selectedAddons.push({ productId: parseInt(checkbox.value) }); });
-
+            //一連串防呆
             if (!customerName || !customerPhone || !document.getElementById('customerAddress').value || !airport || !terminal || !serviceTypeVal || !scheduledPickupTimeVal || !carProductId || !totalAmountStr) {
                 submissionStatusDiv.textContent = '錯誤：所有必填欄位都必須填寫！'; submissionStatusDiv.className = 'error-message'; return;
             }
@@ -1420,12 +1472,12 @@
                 customerPhone: customerPhone,
                 customerAddress: document.getElementById('customerAddress').value,
                 airport: document.getElementById('airport').value,
-                terminal: document.getElementById('terminal').value, // 現在是航廈名稱
+                terminal: document.getElementById('terminal').value,
                 serviceType: document.getElementById('serviceType').value,
                 scheduledPickupTime: document.getElementById('scheduledPickupTime').value,
-                carProductId: parseInt(carProductId), // carProductId 也是字串，後端會 parseInt
+                carProductId: parseInt(carProductId), // carProductId 也是字串，後端會 parseInt(解析整數)
                 addon_product_ids: concatenated_ids_string, // <<< 修改於此：直接使用字串，欄位名也修改
-                totalAmount: totalAmount // totalAmount 也是字串，後端會 parseDouble
+                totalAmount: totalAmount // totalAmount 也是字串，後端會 parseDouble(解析精確數)
             };
             submissionStatusDiv.textContent = '正在提交訂單...'; submissionStatusDiv.className = '';
             try {
@@ -1447,7 +1499,10 @@
             }
         }
 
-        function initializeAddOrderForm() { /* ... initializeAddOrderForm 完整定義，包含對 populate... 函式的呼叫以及 airportSelect 的 change 事件監聽器 ... */
+        //initializeAddOrderForm()這組函式負責處理「新增訂單」頁面的所有邏輯。
+        //功用：初始化「新增訂單」表單的函式。
+        //主要工作：當使用者點進「新增訂單」頁面時，此函式會被呼叫，它會去抓取表單中的各個元素 (如機場、航廈、車型的下拉選單)，並呼叫其他函式來從後端 API 獲取資料並填充這些選單。
+        function initializeAddOrderForm() {
             console.log("initializeAddOrderForm 函式開始執行！");
             airportSelect = document.getElementById('airport');
             terminalSelect = document.getElementById('terminal');
@@ -1474,16 +1529,19 @@
             console.log("initializeAddOrderForm 函式執行完畢。");
         }
 
-        // --- 查詢訂單相關函式 ---
+        //formatDate(date) 功用：將 JavaScript 的 Date 物件格式化成 YYYY-MM-DD 格式的字串，方便用於 API 請求或設定日期輸入框的值。
         function formatDate(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份是 0-indexed
             const day = String(date.getDate()).padStart(2, '0');
-            // ↓↓↓ 請將您的 return 語句修改成下面這一行 ↓↓↓
             return `${year}-${month}-${day}`;
         }
 
-        async function fetchOrders(params) { /* ... fetchOrders 完整定義 ... */
+        //fetchOrders(params)根據給定的條件從後端獲取訂單列表。
+        //主要工作：接收一個包含查詢條件的物件 (例如 {date: '2025-06-06', filterStatus: 'active'})，
+        // 然後將這些條件組合成 API 的查詢字串 (如 ?date=2025-06-06&filterStatus=active)，
+        // 發送到 /api/1/view/orders。成功後，將獲取的訂單資料傳給 displayOrders 函式去顯示。
+        async function fetchOrders(params) {
             const orderResultsBody = document.getElementById('orderResultsBody');
             const loadingMessage = document.getElementById('loadingMessage');
             const noResultsMessage = document.getElementById('noResultsMessage');
@@ -1496,11 +1554,9 @@
             orderResultsBody.innerHTML = ''; loadingMessage.style.display = 'block'; noResultsMessage.style.display = 'none';
             noResultsMessage.className = 'alert alert-info'; noResultsMessage.textContent = '找不到符合條件的訂單。';
             const queryParams = new URLSearchParams(params).toString();
-            // console.log(`正在獲取訂單，參數: ${queryParams}`);
-            // --- ↓↓↓ 除錯：印出將要 fetch 的完整 URL ↓↓↓ ---
             const fullUrl = `${API_BASE_URL}/api/1/view/orders?${queryParams}`;
-            console.log("Fetching URL:", fullUrl);
-            // --- ↑↑↑ 除錯結束 ↑↑↑ ---
+            console.log("Fetching URL:", fullUrl); // --- 除錯：印出將要 fetch 的完整 URL ---
+
             try {
                 const response = await fetch(fullUrl);
                 if (!response.ok) {
@@ -1517,6 +1573,12 @@
             } finally { loadingMessage.style.display = 'none'; }
         }
 
+        //displayOrders(orders)將獲取到的訂單資料顯示在表格中。
+        //主要工作：
+        //1.清空表格現有內容。
+        //2.遍歷訂單資料陣列，為每一筆訂單動態生成一個表格行 (<tr>) 和對應的儲存格 (<td>)。
+        //3.根據訂單狀態（例如 "已完成", "已取消"）為狀態欄位加上不同的顏色。
+        //4.為每一行訂單動態生成「指派司機/更改指派」和「詳情」按鈕，並為按鈕綁定 onclick 事件，傳入該訂單的 ID。
         function displayOrders(orders) {
             const orderResultsBody = document.getElementById('orderResultsBody');
             const noResultsMessage = document.getElementById('noResultsMessage');
@@ -1542,7 +1604,7 @@
                 // 如果沒有訂單，顯示一個提示訊息的行
                 const row = orderResultsBody.insertRow();
                 const cell = row.insertCell();
-                cell.colSpan = 13; // <<< 確保 colspan 與表頭欄位數一致
+                cell.colSpan = 13; // <<< 確保 colspan 與表頭欄位數一致 //?
                 cell.textContent = '目前沒有符合條件的訂單。';
                 cell.className = 'text-center text-muted';
                 return;
@@ -1552,10 +1614,10 @@
 
             orders.forEach(order => {
                 const row = orderResultsBody.insertRow();
-                row.insertCell().textContent = order.display_order_id || 'N/A'; // 您的 VIEW 中此欄位名為 display_order_id
+                row.insertCell().textContent = order.display_order_id || 'N/A';
                 row.insertCell().textContent = order.customer_name || 'N/A';
                 row.insertCell().textContent = order.customer_phone || 'N/A';
-                row.insertCell().textContent = order.display_address || 'N/A'; // 您的 VIEW 中此欄位名為 display_address
+                row.insertCell().textContent = order.display_address || 'N/A';
                 row.insertCell().textContent = order.service_type || 'N/A';
 
                 let formattedTime = 'N/A';
@@ -1594,36 +1656,30 @@
                 }
                 row.insertCell().textContent = formattedAmount;
 
-                row.insertCell().textContent = order.order_status || 'N/A'; // 訂單狀態
+                const statusCell = row.insertCell(); // 獲取訂單狀態的儲存格 (<td>)
+                const currentOrderStatus = order.order_status || 'N/A'; // 獲取當前訂單狀態文字
+                statusCell.textContent = currentOrderStatus; // 先設定文字內容
 
-                 const statusCell = row.insertCell(); // 獲取訂單狀態的儲存格 (<td>)
-            const currentOrderStatus = order.order_status || 'N/A'; // 獲取當前訂單狀態文字
-            statusCell.textContent = currentOrderStatus; // 先設定文字內容
+                // 清除可能存在的舊樣式 (如果表格是動態更新而非完全重建)
+                statusCell.className = ''; // 清除所有 class
+                statusCell.style.color = '';  // 重設行內 style 顏色
 
-            // 清除可能存在的舊樣式 (如果表格是動態更新而非完全重建)
-            statusCell.className = ''; // 清除所有 class
-            statusCell.style.color = '';  // 重設行內 style 顏色
+                // 定義不同狀態群組，請確保這些字串與您資料庫中 `orders.order_status` 的實際值完全匹配
+                const inProgressStatuses = ["司機已出發", "已抵達上車點", "乘客已上車"];
+                const completedStatuses = ["行程已完成", "已完成"]; // "已完成" 可能是由店家手動設定的
+                const cancelledStatuses = ["已取消", "訂單取消"];
 
-            // 定義不同狀態群組，請確保這些字串與您資料庫中 `orders.order_status` 的實際值完全匹配
-            const inProgressStatuses = ["司機已出發", "已抵達上車點", "乘客已上車"];
-            const completedStatuses = ["行程已完成", "已完成"]; // "已完成" 可能是由店家手動設定的
-            const cancelledStatuses = ["已取消", "訂單取消"];
-
-            if (inProgressStatuses.includes(currentOrderStatus)) {
-                statusCell.classList.add('text-primary'); // Bootstrap 的藍色
-                // 或者，如果您不想用 Bootstrap class： statusCell.style.color = 'blue';
-            } else if (completedStatuses.includes(currentOrderStatus)) {
-                statusCell.classList.add('text-success'); // Bootstrap 的綠色
-                // 或者： statusCell.style.color = 'green';
-            } else if (cancelledStatuses.includes(currentOrderStatus)) {
-                statusCell.classList.add('text-danger');  // Bootstrap 的紅色
-                // 或者： statusCell.style.color = 'red';
-            } else {
-                // 其他狀態 (例如 "已確認", "已指派司機" 等被視為 "待處理")
-                // 將使用預設的文字顏色，不需要特別設定
-                // 如果您想給 "待處理" 一個特定顏色 (例如深灰色)，可以這樣加：
-                // statusCell.classList.add('text-dark'); // Bootstrap 的深灰色
-            }
+                if (inProgressStatuses.includes(currentOrderStatus)) {
+                    statusCell.classList.add('text-primary'); // Bootstrap 的藍色 Bootstrap?*
+                    // 或者，如果您不想用 Bootstrap class： statusCell.style.color = 'blue';
+                } else if (completedStatuses.includes(currentOrderStatus)) {
+                    statusCell.classList.add('text-success'); // Bootstrap 的綠色
+                    // 或者： statusCell.style.color = 'green';
+                } else if (cancelledStatuses.includes(currentOrderStatus)) {
+                    statusCell.classList.add('text-danger');  // Bootstrap 的紅色
+                    // 或者： statusCell.style.color = 'red';
+                } else {
+                }
 
                 // 新增司機指派狀態欄位
                 const driverStatusCell = row.insertCell();
@@ -1695,10 +1751,10 @@
             });
         }
 
-
-
-
-
+        //initializeQueryOrderView()這組函式負責訂單的查詢、顯示與修改
+        //功用：初始化「查詢訂單」頁面的函式。
+        //主要工作：設定「今日訂單」、「明日訂單」、「自訂日期區間」這三個 Tab 的點擊事件，
+        // 以及「顯示有效訂單」/「顯示所有訂單」的篩選器。當頁面載入或篩選條件改變時，它會呼叫 fetchOrders 來獲取訂單資料。
         function initializeQueryOrderView() {
             console.log("正在初始化查詢訂單檢視 (含篩選器)...");
 
@@ -1709,7 +1765,6 @@
             const searchCustomRangeBtn = document.getElementById('searchCustomRange');
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
-            // const customRangeResultsPane = document.getElementById('customRangeResults'); // 如果您會用到它
             const filterRadios = document.querySelectorAll('input[name="orderStatusFilter"]');
             const orderResultsBody = document.getElementById('orderResultsBody'); // 用於清空提示
 
