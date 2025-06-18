@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>派車系統 - 司機主頁</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 保持深色主題，並進行微調以適配 Bootstrap */
+        body {
+            background-color: #003C5A;
+            color: white;
+        }
+        .user-info {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 0.9em;
+        }
+        /* 自訂按鈕樣式，使其保留原有風格但更具彈性 */
+        .driver-btn {
+            background-color: #005A87;
+            border: 1px solid #0077B3;
+            border-radius: 10px;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .driver-btn:hover {
+            background-color: #0077B3;
+            color: white;
+        }
+        .driver-btn .icon {
+            font-size: 2.5em; /* 調整圖示大小 */
+        }
+        .driver-btn .btn-text {
+            font-size: 1.1em; /* 調整文字大小 */
+            margin-top: 0.5rem;
+        }
+        .announcement-dot {
+            background-color: red;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 5px;
+            vertical-align: super;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <script>
+        // 頁面載入時檢查登入狀態 (這段邏輯不變)
+        const isLoggedIn = localStorage.getItem('isDriverLoggedIn');
+        const driverId = localStorage.getItem('loggedInDriverId');
+        if (isLoggedIn !== 'true' || !driverId) {
+            alert('您尚未登入或登入已逾時，請重新登入。');
+            window.location.href = 'driver_login.html';
+        }
+    </script>
+
+    <div class="user-info">
+        已登入司機：<span id="currentDriverId"></span>
+        <button id="logoutButton" class="btn btn-danger btn-sm ms-2">登出</button>
+    </div>
+
+    <header class="container text-center py-4">
+        <h1 class="fw-bold">Kerwin</h1>
+        <p class="lead">派車系統</p>
+    </header>
+
+    <main class="container flex-grow-1">
+        <div class="row g-3 g-lg-4">
+            <div class="col-6 col-lg-4">
+                <a href="trip_management.html" class="driver-btn p-3 d-flex flex-column justify-content-center align-items-center h-100 text-decoration-none">
+                    <div class="icon">🚗</div>
+                    <span class="btn-text">趟次管理</span>
+                </a>
+            </div>
+            <div class="col-6 col-lg-4">
+                <a href="modify_trips.html" class="driver-btn p-3 d-flex flex-column justify-content-center align-items-center h-100 text-decoration-none">
+                    <div class="icon">ℹ️</div>
+                    <span class="btn-text">趟次異動</span>
+                </a>
+            </div>
+            <div class="col-6 col-lg-4">
+                <a href="cancel_trips.html" class="driver-btn p-3 d-flex flex-column justify-content-center align-items-center h-100 text-decoration-none">
+                    <div class="icon">❌</div>
+                    <span class="btn-text">趟次取消</span>
+                </a>
+            </div>
+            <div class="col-6 col-lg-4">
+                <a href="announcements.html" class="driver-btn p-3 d-flex flex-column justify-content-center align-items-center h-100 text-decoration-none">
+                    <div class="icon">📢</div>
+                    <span class="btn-text">訊息公告 <span class="announcement-dot"></span></span>
+                </a>
+            </div>
+            <div class="col-6 col-lg-4">
+                <a href="trip_history.html" class="driver-btn p-3 d-flex flex-column justify-content-center align-items-center h-100 text-decoration-none">
+                    <div class="icon">📜</div>
+                    <span class="btn-text">歷史紀錄</span>
+                </a>
+            </div>
+            <div class="col-6 col-lg-4">
+                <a href="driver_profile.html" class="driver-btn p-3 d-flex flex-column justify-content-center align-items-center h-100 text-decoration-none">
+                    <div class="icon">👤</div>
+                    <span class="btn-text">司機專區</span>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="container text-center py-3">
+        <hr style="border-color: #0077B3;">
+        <p class="text-white-50">&copy; 2025 大樹KERWIN車行</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // JavaScript 邏輯幾乎不變
+        document.getElementById('currentDriverId').textContent = driverId || '未知';
+
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            localStorage.removeItem('isDriverLoggedIn');
+            localStorage.removeItem('loggedInDriverId');
+            alert('您已成功登出。');
+            window.location.href = 'driver_login.html';
+        });
+
+        // 這個導航函式現在可以簡化，因為我們直接用 <a> 標籤
+        // 如果未來有更複雜的邏輯可以再加回來
+        // function navigateTo(page) {
+        //     window.location.href = page;
+        // }
+    </script>
+</body>
+</html>
