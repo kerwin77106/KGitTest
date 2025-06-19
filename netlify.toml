@@ -1,0 +1,15 @@
+# Netlify 設定檔
+
+# build settings
+[build]
+  # 設定發布的資料夾為 PROJECT
+  publish = "PROJECT/"
+
+# redirect and rewrite rules
+[[redirects]]
+  # 這條規則是關鍵，它會覆蓋掉 Netlify 的預設 SPA 規則
+  # 意思是：如果請求的路徑找不到對應的檔案，就顯示 Netlify 預設的 404 頁面
+  # 而不是重寫到 index.html
+  from = "/*"
+  to = "/404.html"
+  status = 404
