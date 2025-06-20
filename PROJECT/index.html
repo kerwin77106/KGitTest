@@ -233,7 +233,25 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // --- 全域變數和靜態資料 ---
-        const API_BASE_URL = 'https://tese0307-production.up.railway.app';
+        // --- API 網址智慧切換 ---
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+
+            // 檢查網址的主機名稱是否為 localhost 或 127.0.0.1
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // 如果是在本機環境，就使用本地的後端網址
+                return 'http://localhost:8000';
+            } else {
+                // 否則，就使用雲端正式環境的網址
+                return 'https://tese0307-production.up.railway.app';
+            }
+        };
+
+        const API_BASE_URL = getApiBaseUrl();
+
+        // 加上這行日誌，方便您在 F12 開發者工具中，隨時確認當前連線的是哪個後端
+        console.log(`目前使用的 API Server: ${API_BASE_URL}`);
+        
         let bookingData = { addons: [] }; // 初始化 bookingData
         const API_AIRPORTS = [{ "id": "TPE", "name": "桃園國際機場" }, { "id": "TSA", "name": "台北松山機場" }, { "id": "KHH", "name": "高雄小港機場" }];
         const API_TERMINALS = { "TPE": [{ "id": "1", "name": "第一航廈" }, { "id": "2", "name": "第二航廈" }], "TSA": [{ "id": "1", "name": "第一航廈" }, { "id": "2", "name": "第二航廈" }], "KHH": [{ "id": "D", "name": "國內航廈" }, { "id": "I", "name": "國際航廈" }] };
@@ -462,34 +480,34 @@
                     // 檢查這個加購項目是否已經被選過
                     const isChecked = bookingData.addons?.some(a => a.productId === addon.product_id) ? 'checked' : '';
 
-                   const item = `
+                    const item = `
                 <label class="list-group-item">
                     <input class="form-check-input me-1" type="checkbox" value="${addon.product_id}" ${isChecked} onchange="toggleAddon(this, '${addon.Product_name}', ${addon.Product_price})">
                     ${addon.Product_name} - TWD ${addon.Product_price.toLocaleString()}
                 </label>`;
-            container.innerHTML += item;
-        });
-    } catch (error) {
-        console.error("載入加購服務時出錯:", error);
-        container.innerHTML = '<p class="text-danger">無法載入加值服務選項。</p>';
-    }
-}
+                    container.innerHTML += item;
+                });
+            } catch (error) {
+                console.error("載入加購服務時出錯:", error);
+                container.innerHTML = '<p class="text-danger">無法載入加值服務選項。</p>';
+            }
+        }
 
         // *** 補回來的函式 ***
         function toggleAddon(checkbox, productName, productPrice) {
-    if (!bookingData.addons) {
-        bookingData.addons = [];
-    }
-    const productId = parseInt(checkbox.value);
-    
-    if (checkbox.checked) {
-        bookingData.addons.push({ productId, productName, productPrice });
-    } else {
-        bookingData.addons = bookingData.addons.filter(a => a.productId !== productId);
-    }
-    
-    updateTotalAmount(); // 每次勾選都更新總金額
-}
+            if (!bookingData.addons) {
+                bookingData.addons = [];
+            }
+            const productId = parseInt(checkbox.value);
+
+            if (checkbox.checked) {
+                bookingData.addons.push({ productId, productName, productPrice });
+            } else {
+                bookingData.addons = bookingData.addons.filter(a => a.productId !== productId);
+            }
+
+            updateTotalAmount(); // 每次勾選都更新總金額
+        }
 
 
         function updateTotalAmount() {

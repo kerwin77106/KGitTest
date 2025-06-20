@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,8 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #003C5A; /* 深藍色背景 */
+            background-color: #003C5A;
+            /* 深藍色背景 */
             color: white;
             display: flex;
             justify-content: center;
@@ -17,37 +19,44 @@
             padding: 20px;
             box-sizing: border-box;
         }
+
         .login-container {
             background-color: #005A87;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
             width: 100%;
             max-width: 400px;
             text-align: center;
         }
+
         .login-container h2 {
             margin-bottom: 25px;
             font-size: 1.8em;
         }
+
         .login-container .logo {
             font-size: 2.5em;
             font-weight: bold;
             margin-bottom: 5px;
         }
+
         .login-container .system-name {
             font-size: 1em;
             margin-bottom: 20px;
         }
+
         .form-group {
             margin-bottom: 20px;
             text-align: left;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-size: 0.9em;
         }
+
         .form-group input {
             width: 100%;
             padding: 12px;
@@ -58,9 +67,11 @@
             box-sizing: border-box;
             font-size: 1em;
         }
+
         .form-group input::placeholder {
             color: #b0c4de;
         }
+
         .login-button {
             background-color: #0077B3;
             color: white;
@@ -72,9 +83,11 @@
             width: 100%;
             transition: background-color 0.3s ease;
         }
+
         .login-button:hover {
             background-color: #008CBA;
         }
+
         .error-message {
             color: #ffdddd;
             background-color: #902020;
@@ -82,10 +95,12 @@
             border-radius: 5px;
             margin-top: 15px;
             font-size: 0.9em;
-            display: none; /* 預設隱藏 */
+            display: none;
+            /* 預設隱藏 */
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="logo">Kerwin</div>
@@ -105,9 +120,26 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://tese0307-production.up.railway.app'; // 與您 Server.java 設定一致
+        // --- API 網址智慧切換 ---
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
 
-        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            // 檢查網址的主機名稱是否為 localhost 或 127.0.0.1
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // 如果是在本機環境，就使用本地的後端網址
+                return 'http://localhost:8000';
+            } else {
+                // 否則，就使用雲端正式環境的網址
+                return 'https://tese0307-production.up.railway.app';
+            }
+        };
+
+        const API_BASE_URL = getApiBaseUrl();
+
+        // 加上這行日誌，方便您在 F12 開發者工具中，隨時確認當前連線的是哪個後端
+        console.log(`目前使用的 API Server: ${API_BASE_URL}`);
+
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
             event.preventDefault(); // 防止表單傳統提交
 
             const driverId = document.getElementById('driverId').value;
@@ -153,4 +185,5 @@
         });
     </script>
 </body>
+
 </html>

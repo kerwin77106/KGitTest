@@ -227,7 +227,24 @@
         integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
         crossorigin="anonymous"></script>
     <script>
-        const API_BASE_URL = 'https://tese0307-production.up.railway.app'; // 全域 API 基本 URL
+        // --- API 網址智慧切換 ---
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+
+            // 檢查網址的主機名稱是否為 localhost 或 127.0.0.1
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // 如果是在本機環境，就使用本地的後端網址
+                return 'http://localhost:8000';
+            } else {
+                // 否則，就使用雲端正式環境的網址
+                return 'https://tese0307-production.up.railway.app';
+            }
+        };
+
+        const API_BASE_URL = getApiBaseUrl();
+
+        // 加上這行日誌，方便您在 F12 開發者工具中，隨時確認當前連線的是哪個後端
+        console.log(`目前使用的 API Server: ${API_BASE_URL}`);
 
         let assignDriverModalInstance = null; // 用於保存 Bootstrap Modal 實例
 

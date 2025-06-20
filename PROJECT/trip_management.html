@@ -202,7 +202,25 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://tese0307-production.up.railway.app';
+        // --- API 網址智慧切換 ---
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+
+            // 檢查網址的主機名稱是否為 localhost 或 127.0.0.1
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // 如果是在本機環境，就使用本地的後端網址
+                return 'http://localhost:8000';
+            } else {
+                // 否則，就使用雲端正式環境的網址
+                return 'https://tese0307-production.up.railway.app';
+            }
+        };
+
+        const API_BASE_URL = getApiBaseUrl();
+
+        // 加上這行日誌，方便您在 F12 開發者工具中，隨時確認當前連線的是哪個後端
+        console.log(`目前使用的 API Server: ${API_BASE_URL}`);
+
         document.getElementById('currentDriverIdDisplay').textContent = loggedInDriverId || '未知';
 
         document.getElementById('logoutButton').addEventListener('click', function () {
@@ -327,8 +345,8 @@
                 // 您可能需要檢查多個可能的初始狀態
                 case '已指派': // 或者其他表示 "準備讓司機出發" 的狀態
                 case '已確認': // 假設這也是一個有效的初始狀態
-                // 新增一個通用初始狀態判斷，如果不是後面明確的司機流程狀態，也不是已完成/取消，則顯示出發
-                // default: // Be careful with default if other statuses exist
+                    // 新增一個通用初始狀態判斷，如果不是後面明確的司機流程狀態，也不是已完成/取消，則顯示出發
+                    // default: // Be careful with default if other statuses exist
                     btnText = '出發';
                     action = 'depart';
                     break;
@@ -374,8 +392,8 @@
                 const statusText = document.createElement('span');
                 statusText.textContent = displayText || currentStatus || '---';
                 statusText.style.fontSize = '0.85em';
-                if(currentStatus === '行程已完成') statusText.style.color = '#2ecc71'; // Green
-                if(currentStatus === '已取消') statusText.style.color = '#e74c3c'; // Red
+                if (currentStatus === '行程已完成') statusText.style.color = '#2ecc71'; // Green
+                if (currentStatus === '已取消') statusText.style.color = '#e74c3c'; // Red
                 buttonContainer.appendChild(statusText);
             } else {
                 const button = document.createElement('button');
@@ -390,7 +408,7 @@
             return buttonContainer;
         }
 
-                ordersTableBody.addEventListener('click', function(event) {
+        ordersTableBody.addEventListener('click', function (event) {
             if (event.target.classList.contains('status-update-btn')) {
                 const button = event.target;
                 const orderId = button.dataset.orderId;
@@ -446,36 +464,36 @@
                     } else {
                         // Fallback: if we don't know which was active, try refreshing today's as a guess or prompt user
                         // Or, even better, store the last fetched date string in a variable.
-                         alert("請手動刷新列表以查看最新狀態，或重新點擊今日/明日訂單按鈕。");
-                         // To make it refresh the current list without knowing which button,
-                         // you'd need to store lastUsedDateStr.
-                         // For now, let's re-enable the button:
-                         if(buttonElement) {
+                        alert("請手動刷新列表以查看最新狀態，或重新點擊今日/明日訂單按鈕。");
+                        // To make it refresh the current list without knowing which button,
+                        // you'd need to store lastUsedDateStr.
+                        // For now, let's re-enable the button:
+                        if (buttonElement) {
                             // We'd need to know the *new* button text based on result.new_status
                             // This part is tricky without re-rendering the whole row or list.
                             // Simplest is full list refresh.
                             // The alert above is a temporary measure.
-                         }
+                        }
                     }
-                     // After a successful update, we should refresh the list to show the new button/status
-                     // Let's try to determine which list to refresh based on which button might have been last clicked
-                     // This is a bit of a guess. A better way is to store the last `dateStr` used for fetching.
-                     if (document.getElementById('todayOrdersBtn').classList.contains('temp-active')) { // Add 'temp-active' class on click
+                    // After a successful update, we should refresh the list to show the new button/status
+                    // Let's try to determine which list to refresh based on which button might have been last clicked
+                    // This is a bit of a guess. A better way is to store the last `dateStr` used for fetching.
+                    if (document.getElementById('todayOrdersBtn').classList.contains('temp-active')) { // Add 'temp-active' class on click
                         fetchDriverOrders(formatDate(new Date()));
-                     } else if (document.getElementById('tomorrowOrdersBtn').classList.contains('temp-active')) {
+                    } else if (document.getElementById('tomorrowOrdersBtn').classList.contains('temp-active')) {
                         const tomorrow = new Date();
                         tomorrow.setDate(tomorrow.getDate() + 1);
                         fetchDriverOrders(formatDate(tomorrow));
-                     } else {
+                    } else {
                         // If no active button hint, maybe refresh based on what's more likely or don't auto-refresh
                         // Forcing a refresh of today's orders as a default for now
                         fetchDriverOrders(formatDate(new Date()));
-                     }
+                    }
 
 
                 } else {
                     alert(`狀態更新失敗: ${result.message || response.statusText}`);
-                    if(buttonElement) {
+                    if (buttonElement) {
                         buttonElement.disabled = false; // Re-enable button on failure
                         // Restore original button text if you stored it or can derive it
                         // For simplicity, just re-enabling. The text will be fixed on next list render.
@@ -485,10 +503,10 @@
             } catch (error) {
                 console.error('狀態更新請求錯誤:', error);
                 alert(`狀態更新請求時發生錯誤: ${error.message}`);
-                 if(buttonElement) {
+                if (buttonElement) {
                     buttonElement.disabled = false;
                     // buttonElement.textContent = originalButtonText;
-                 }
+                }
             }
         }
 
